@@ -1,0 +1,88 @@
+
+{% extends "base.html" %}
+
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+  <div class="row justify-content-center">
+
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm">
+
+        <div class="card-body p-4">
+
+          {# page heading #}
+          <h1 class="h4 mb-3">Login</h1>
+
+          {# short helper text under the heading #}
+          <p class="text-muted mb-4">Use your username and password to access courses.</p>
+
+          {# show an error message if the form has errors #}
+          {% if form.errors %}
+
+            {# alert box for login errors #}
+            <div class="alert alert-danger">
+              Please check your username/password and try again.
+            </div>
+
+          {% endif %}
+
+          {# login form that posts username and password #}
+          <form method="post">
+
+            {# csrf token to protect the form submission #}
+            {% csrf_token %}
+
+            {# username input section #}
+            <div class="mb-3">
+
+              {# label for username input #}
+              <label class="form-label">Username</label>
+
+              {# username input field #}
+              <input type="text" name="username" class="form-control" autofocus required>
+            </div>
+
+            {# password input section #}
+            <div class="mb-3">
+
+              {# label for password input #}
+              <label class="form-label">Password</label>
+
+              {# password input field #}
+              <input type="password" name="password" class="form-control" required>
+            </div>
+
+            {# include next url if it was provided #}
+            {% if next %}
+
+              {# hidden field that keeps the next redirect url #}
+              <input type="hidden" name="next" value="{{ next }}">
+
+            {% endif %}
+
+            {# submit button to log in #}
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+          </form>
+
+          {# divider line between form and links #}
+          <hr class="my-4">
+
+          {# links row for password reset and signup #}
+          <div class="d-flex justify-content-between">
+
+            {# link to password reset page #}
+            <a href="{% url 'password_reset' %}">Forgot password?</a>
+
+            {# link to signup page #}
+            <a href="{% url 'signup' %}">Create account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
