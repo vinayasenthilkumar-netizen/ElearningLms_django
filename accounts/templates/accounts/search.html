@@ -1,0 +1,223 @@
+{# extend the main base layout file #}
+{% extends "base.html" %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+
+{# top bar with page title and back button #}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+
+  {# left side text for the page header #}
+  <div>
+
+    {# main heading for this page #}
+    <h1 class="h4 mb-1">Teacher Search</h1>
+
+    {# searched #}
+    <div class="text-muted small">Search students, teachers, courses, and modules</div>
+  </div>
+
+  {# link back to the courses list page #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:list' %}">
+    ← Back to courses
+  </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+
+  <div class="card-body">
+
+    {# search form using get so the query shows in the url #}
+    <form method="get" class="row g-2">
+
+      {# input column for the search box #}
+      <div class="col-md-10">
+
+        {# text input where the user types the search query #}
+        <input type="text"
+               name="q"
+               value="{{ q }}"
+               class="form-control"
+               placeholder="Search by name, email, course title, or module...">
+      </div>
+
+      {# button column for the search action #}
+      <div class="col-md-2">
+
+        {# submit button to run the search #}
+        <button class="btn btn-primary w-100">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# only show results when a query exists #}
+{% if q %}
+
+  <div class="row g-4">
+
+    <div class="col-lg-6">
+
+      <div class="card shadow-sm">
+
+        {# card header title #}
+        <div class="card-header">Students</div>
+
+        <div class="card-body">
+
+          {# check if any students were found #}
+          {% if students %}
+
+            <ul class="list-group list-group-flush">
+
+              {# loop through #}
+              {% for u in students %}
+
+                {# one student row #}
+                <li class="list-group-item px-0">
+
+                  {# show the student's username #}
+                  <strong>{{ u.username }}</strong>
+
+                  {# show email only if it exists #}
+                  {% if u.email %}<div class="small text-muted">{{ u.email }}</div>{% endif %}
+                </li>
+
+              {% endfor %}
+            </ul>
+
+          {# if no students match, show a message #}
+          {% else %}
+
+            {# message shown when no students were found #}
+            <p class="text-muted mb-0">No students found.</p>
+
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+
+      <div class="card shadow-sm">
+
+        {# card header title #}
+        <div class="card-header">Teachers</div>
+
+        {# card body content #}
+        <div class="card-body">
+
+          {# check if any teachers were found #}
+          {% if teachers %}
+
+            {# list container for teachers #}
+            <ul class="list-group list-group-flush">
+
+              {% for u in teachers %}
+
+                {# one teacher row #}
+                <li class="list-group-item px-0">
+
+                  {# show the teachers username #}
+                  <strong>{{ u.username }}</strong>
+
+                  {# show email only if it exists #}
+                  {% if u.email %}<div class="small text-muted">{{ u.email }}</div>{% endif %}
+                </li>
+
+              {% endfor %}
+            </ul>
+
+          {% else %}
+
+            {# message #}
+            <p class="text-muted mb-0">No teachers found.</p>
+
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+
+        <div class="card-header">My Courses</div>
+
+        <div class="card-body">
+
+          {# check if any matching courses were found #}
+          {% if my_courses %}
+
+            {# list container for courses #}
+            <ul class="list-group list-group-flush">
+
+              {# loop through each matching course #}
+              {% for course in my_courses %}
+                {# one course row #}
+                <li class="list-group-item px-0">
+                  {# link to the course detail page #}
+                  <a href="{% url 'courses:detail' course.id %}">{{ course.title }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+
+          {# if no courses match show message #}
+          {% else %}
+
+            {# message shown when no courses were found #}
+            <p class="text-muted mb-0">No matching courses found.</p>
+
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+
+        <div class="card-header">Module Matches</div>
+
+        <div class="card-body">
+
+          {# check if there are any module matches #}
+          {% if module_matches %}
+            <ul class="list-group list-group-flush">
+
+              {# loop through each course that matched modules #}
+              {% for course in module_matches %}
+
+                {# one module match row #}
+                <li class="list-group-item px-0">
+
+                  {# link to the course detail page #}
+                  <a href="{% url 'courses:detail' course.id %}">{{ course.title }}</a>
+
+                  {# show the description if it exists #}
+                  {% if course.description %}
+
+                    {# short course description preview #}
+                    <div class="small text-muted">{{ course.description|truncatewords:12 }}</div>
+
+                  {% endif %}
+                </li>
+
+              {% endfor %}
+            </ul>
+
+          {# if no module matches show message #}
+          {% else %}
+
+            {# message #}
+            <p class="text-muted mb-0">No module matches found.</p>
+
+          {# end module matches check #}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endif %}
+
+{% endblock %}

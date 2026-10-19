@@ -1,0 +1,277 @@
+{# extend the main base layout file #}
+{% extends "base.html" %}
+
+{# set page title #}
+{% block title %}Home{% endblock %}
+
+
+{% block content %}
+
+{# top header area with spacing and alignment #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    
+    <div>
+
+      {# main page heading #}
+      <h1 class="h3 mb-1">Home</h1>
+
+      {# show the logged in users username #}
+      <div class="text-muted">Welcome, {{ user.username }}</div>
+    </div>
+  
+    {# right side of the header (back button and unread badge) #}
+    <div class="d-flex gap-2 align-items-center">
+
+      {# back to the courses #}
+      <a href="{% url 'courses:list' %}" class="btn btn-sm btn-outline-secondary">
+        ← Back to courses
+      </a>
+  
+      {# only show this if there are unread notifications #}
+      {% if unread_count %}
+
+        {# badge  displays how many notifications are unread #}
+        <span class="badge text-bg-danger">{{ unread_count }} unread</span>
+
+   
+      {% endif %}
+    </div>
+</div>
+
+
+<div class="row g-4">
+
+  {# left column section #}
+ 
+  <div class="col-lg-4">
+
+    {# profile card container #}
+    <div class="card shadow-sm">
+
+      {# profile card body #}
+      <div class="card-body">
+
+        {# profile section title #}
+        <h5 class="mb-3">Profile</h5>
+
+        {# show username line #}
+        <div><strong>Username:</strong> {{ user.username }}</div>
+
+        {# show role line #}
+        <div><strong>Role:</strong> {{ role }}</div>
+
+        {# show email if the user has one #}
+        {% if user.email %}
+
+          {# show email line #}
+          <div><strong>Email:</strong> {{ user.email }}</div>
+
+      
+        {% endif %}
+      </div>
+    </div>
+
+    {# second card for courses based on role #}
+    <div class="card shadow-sm mt-4">
+
+      {# courses card body #}
+      <div class="card-body">
+
+        {# if the user is a student show enrolled courses #}
+        {% if role == "STUDENT" %}
+
+          {# student courses heading #}
+          <h5 class="mb-3">My Courses</h5>
+
+          {# check if the student has enrolled courses #}
+          {% if enrolled_courses %}
+
+            {# list container for enrolled courses #}
+            <ul class="list-group list-group-flush">
+
+              {# go through each enrollment #}
+              {% for e in enrolled_courses %}
+
+                {# one course row in the list #}
+                <li class="list-group-item px-0">
+
+                  {# link to the course detail page #}
+                  <a href="{% url 'courses:detail' e.course.id %}">
+
+                    {# show the course title #}
+                    {{ e.course.title }}
+
+                  </a>
+                </li>
+
+             
+              {% endfor %}
+            </ul>
+
+          {# if there are no enrolled courses show a message #}
+          {% else %}
+
+            {# message if student is not enrolled yet #}
+            <p class="text-muted mb-0">You are not enrolled in any courses yet.</p>
+
+        
+          {% endif %}
+
+        {# if the user is a teacher show teaching courses #}
+        {% elif role == "TEACHER" %}
+
+          {# teacher courses heading #}
+          <h5 class="mb-3">My Teaching Courses</h5>
+
+          {# check if  teacher has teaching courses #}
+          {% if teaching_courses %}
+
+            {# list container for teaching courses #}
+            <ul class="list-group list-group-flush">
+
+              {# go through each teaching course #}
+              {% for course in teaching_courses %}
+
+                {# one course row in the list #}
+                <li class="list-group-item px-0">
+
+                  {# link to the course detail page #}
+                  <a href="{% url 'courses:detail' course.id %}">
+
+                    {# show the course title #}
+                    {{ course.title }}
+
+                  </a>
+                </li>
+
+             
+              {% endfor %}
+            </ul>
+
+          {# if there are no teaching courses show message #}
+          {% else %}
+
+            {# message shown when teacher has no courses yet #}
+            <p class="text-muted mb-0">You have not created any courses yet.</p>
+
+          {# end teaching courses check #}
+          {% endif %}
+
+        {# end role checks #}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# right column section #}
+  
+  <div class="col-lg-8">
+
+    {# notifications card container #}
+    <div class="card shadow-sm">
+
+      {# card header with title and small text #}
+      <div class="card-header d-flex justify-content-between align-items-center">
+
+        {# header title #}
+        <span>Notifications</span>
+
+        {# label showing we only show the latest #}
+        <small class="text-muted">Latest</small>
+      </div>
+
+      {# notifications card body #}
+      <div class="card-body">
+
+        {# only show the list if notifications exist #}
+        {% if notifications %}
+
+          {# group list wrapper #}
+          <div class="list-group">
+
+            {# loop through each notification #}
+            {% for n in notifications %}
+
+              {# one notification row #}
+              <div class="list-group-item d-flex justify-content-between align-items-start">
+
+                {# left side of the notification content #}
+                <div class="me-3">
+
+                  {# title row area #}
+                  <div class="fw-semibold">
+
+                    {# show a new badge if the notification is not read #}
+                    {% if not n.is_read %}
+
+                      {# badge for unread notifications #}
+                      <span class="badge text-bg-primary me-2">New</span>
+
+                    {# end unread badge check #}
+                    {% endif %}
+
+                    {# show the notification title #}
+                    {{ n.title }}
+                  </div>
+
+                  {# show message text if it exists #}
+                  {% if n.message %}
+
+                    {# notification message preview #}
+                    <div class="text-muted small mt-1">{{ n.message }}</div>
+
+                  {# end message check #}
+                  {% endif %}
+
+                  {# show the date and time the notification was created #}
+                  <div class="text-muted small mt-1">
+                    {{ n.created_at|date:"M d, Y H:i" }}
+                  </div>
+
+                  {# show a link if the notification has one #}
+                  {% if n.link %}
+
+                    {# link to whatever the notification points to #}
+                    <a href="{{ n.link }}" class="small">Open</a>
+
+                  {# link to that particular course #}
+                  {% elif n.course %}
+
+                    {# link to the related course detail page #}
+                    <a href="{% url 'courses:detail' n.course.id %}" class="small">View course</a>
+
+                
+                  {% endif %}
+                </div>
+
+                {# show mark read button only if it is unread #}
+                {% if not n.is_read %}
+
+                  {# link to mark the notification as read #}
+                  <a href="{% url 'notification_read' n.id %}" class="btn btn-sm btn-outline-secondary">
+                    Mark read
+                  </a>
+
+              
+                {% endif %}
+              </div>
+
+            {% endfor %}
+          </div>
+
+        {% else %}
+
+          {# message shown when there are no notifications #}
+          <p class="text-muted mb-0">No notifications yet.</p>
+
+      
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,213 @@
+
+{% extends "base.html" %}
+
+
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
+
+  <div class="row justify-content-center">
+
+    <div class="col-md-7 col-lg-6">
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+
+          {# main heading for the signup page #}
+          <h1 class="h4 mb-3">Create account</h1>
+          <p class="text-muted mb-4">New users are created as <strong>Students</strong> by default.</p>
+
+          {# show an error message if the form has any errors #}
+          {% if form.errors %}
+
+            {# alert box for form errors #}
+            <div class="alert alert-danger">
+              Please fix the errors below.
+            </div>
+
+          {% endif %}
+
+          {# start the signup form and send data using post #}
+          <form method="post">
+
+            {# csrf token to protect the form submission #}
+            {% csrf_token %}
+
+            {# username field section #}
+            <div class="mb-3">
+
+              {# label for the username input #}
+              <label class="form-label">Username</label>
+
+              {# render the username input field #}
+              {{ form.username }}
+
+              {# show username field errors if any #}
+              <div class="text-danger small">{{ form.username.errors }}</div>
+            </div>
+            
+            {# row to place first and last name side by side #}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+
+                {# label for first name #}
+                <label class="form-label">First name</label>
+
+                {# render the first name field #}
+                {{ form.first_name }}
+              </div>
+
+              {# last name input column #}
+              <div class="col-md-6 mb-3">
+
+                {# label for last name #}
+                <label class="form-label">Last name</label>
+
+                {# render the last name field #}
+                {{ form.last_name }}
+              </div>
+            </div>
+            
+            {# email field section #}
+            <div class="mb-3">
+
+              {# label for email #}
+              <label class="form-label">Email</label>
+
+              {# render the email field #}
+              {{ form.email }}
+            </div>
+            
+            {# password field section #}
+            <div class="mb-3">
+
+              {# label for password #}
+              <label class="form-label">Password</label>
+
+              {# render the password input field #}
+              {{ form.password1 }}
+
+              {# show password errors if any #}
+              <div class="text-danger small">{{ form.password1.errors }}</div>
+            </div>
+            
+            {# confirm password field section #}
+            <div class="mb-3">
+
+              {# label for confirm password #}
+              <label class="form-label">Confirm password</label>
+
+              {# render the confirm password input field #}
+              {{ form.password2 }}
+
+              {# show confirm password errors if any #}
+              <div class="text-danger small">{{ form.password2.errors }}</div>
+            </div>
+ 
+            <div class="mb-3">
+
+              {# label for role selection #}
+              <label class="form-label">Account type</label>
+
+              {# render the role select field #}
+              {{ form.role }}
+            </div>
+            
+            {# hidden teacher code section that shows only for teachers #}
+            <div class="mb-3 d-none" id="teacher-code-wrapper">
+
+              {# label for teacher code #}
+              <label class="form-label">Teacher code</label>
+
+              {# render the teacher code field #}
+              {{ form.teacher_code }}
+
+              {# show the help text for teacher code #}
+              <div class="form-text">{{ form.teacher_code.help_text }}</div>
+
+              {# show teacher code errors if any #}
+              <div class="text-danger small">{{ form.teacher_code.errors }}</div>
+            </div>
+
+            {# full width submit button section #}
+            <div class="d-grid mt-3">
+
+              {# submit button to create the account #}
+              <button type="submit" class="btn btn-warning btn-lg">
+                Create account
+              </button>
+            </div>
+          </form>
+          <hr class="my-4">
+
+          {# login link area #}
+          <div class="text-center">
+
+            {# text prompt for existing users #}
+            Already have an account?
+
+            {# link to the login page #}
+            <a href="{% url 'login' %}">Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+
+{# start the script used to show/hide teacher code #}
+<script>
+
+  //run this after the page finishes loading
+  document.addEventListener("DOMContentLoaded", function () {
+
+    const roleSelect = document.getElementById("id_role");
+    const codeWrapper = document.getElementById("teacher-code-wrapper");
+    const codeInput = document.getElementById("id_teacher_code");
+
+    //function that updates the ui based on selected role
+    function syncTeacherUI() {
+
+      //stop if any needed element is missing
+      if (!roleSelect || !codeWrapper || !codeInput) return;
+
+      //check if the selected role is teacher
+      const isTeacher = roleSelect.value === "TEACHER";
+
+      //show the teacher code area only for teachers
+      codeWrapper.classList.toggle("d-none", !isTeacher);
+
+      //if teacher is selected, require the teacher code
+      if (isTeacher) {
+
+        codeInput.disabled = false;
+
+        //make the field required #}
+        codeInput.required = true;
+
+      //otherwise hide and reset the field #}
+      } else {
+
+        //clear any old value #}
+        codeInput.value = "";
+
+        //disable the input #}
+        codeInput.disabled = true;
+
+        //make the field not required 
+        codeInput.required = false;
+      }
+    }
+
+    //update the ui whenever the role dropdown changes 
+    roleSelect.addEventListener("change", syncTeacherUI);
+
+    //run once on page load so it starts in the correct state #}
+    syncTeacherUI();
+  });
+</script>
+
+{# end the extra javascript block #}
+{% endblock %}

@@ -1,0 +1,443 @@
+{# extend the main base layout file #}
+{% extends "base.html" %}
+
+{# set the page title to the target users username #}
+{% block title %}{{ target_user.username }}{% endblock %}
+
+{% block content %}
+
+{# top bar with back button and edit button #}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+
+  {# link back to the courses list page #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:list' %}">
+    ← Back to courses
+  </a>
+
+  {# only show edit profile if the viewer is the owner #}
+  {% if viewer_is_owner %}
+
+    {# link to the profile edit page #}
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'profile_edit' %}">
+      Edit profile
+    </a>
+
+ 
+  {% endif %}
+</div>
+
+
+<div class="row g-4">
+
+  <div class="col-lg-4">
+
+    <div class="card shadow-sm">
+
+      <div class="card-body text-center">
+
+        {# check if  user has an uploaded profile photo #}
+        {% if target_profile.photo %}
+
+          {# show the profile photo image #}
+          <img src="{{ target_profile.photo.url }}"
+               alt="{{ target_user.username }}"
+               class="rounded-circle mb-3"
+               style="width:120px; height:120px; object-fit:cover;">
+
+        {# if there is no photo, show a placeholder #}
+        {% else %}
+
+          {# circle placeholder with first letter of the username #}
+          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3"
+               style="width:120px; height:120px; font-size:2rem;">
+            {{ target_user.username|first|upper }}
+          </div>
+
+     
+        {% endif %}
+
+        {# name display area #}
+        <h2 class="h5 mb-1">
+
+          {# show first and last name if available #}
+          {% if target_user.first_name or target_user.last_name %}
+
+            {# print first and last name #}
+            {{ target_user.first_name }} {{ target_user.last_name }}
+
+          {# if not just username #}
+          {% else %}
+
+            {# print username #}
+            {{ target_user.username }}
+
+          {% endif %}
+        </h2>
+
+        {# show the @username line #}
+        <div class="text-muted small mb-2">@{{ target_user.username }}</div>
+
+        {# show a badge for the users role #}
+        <span class="badge text-bg-secondary">{{ target_role }}</span>
+
+        {# only show email if it there #}
+        {% if target_user.email %}
+
+          {# print the email address #}
+          <div class="small text-muted mt-3">{{ target_user.email }}</div>
+
+     
+        {% endif %}
+
+        {# only show bio if its there #}
+        {% if target_profile.bio %}
+
+          {# print bio text #}
+          <p class="small mt-3 mb-0">{{ target_profile.bio }}</p>
+
+        {% endif %}
+      </div>
+    </div>
+
+  
+    {# only show this section if the viewer owns the profile #}
+    {% if viewer_is_owner %}
+ 
+      {# card container for upcoming deadlines #}
+      <div class="card shadow-sm mt-4">
+
+          {# card header title #}
+          <div class="card-header">Upcoming Deadlines</div>
+
+          {# card body area #}
+          <div class="card-body">
+
+              {# check if there are any upcoming deadlines to show #}
+              {% if upcoming_deadlines %}
+
+                  {# list group for the deadlines #}
+                  <ul class="list-group list-group-flush">
+
+                      {# loop through each deadline item #}
+                      {% for deadline in upcoming_deadlines %}
+
+                          {# one deadline row #}
+                          <li class="list-group-item">
+
+                              {# show the assignment title #}
+                              <strong>{{ deadline.title }}</strong>
+
+                              {# show the course name under the title #}
+                              <div class="small text-muted">{{ deadline.course.title }}</div>
+
+                              {# show the due date/time #}
+                              <div class="small text-muted">Due: {{ deadline.due_date|date:"M d, Y H:i" }}</div>
+                          </li>
+
+                      {# end deadlines loop #}
+                      {% endfor %}
+                  </ul>
+
+              {# show empty message if there are no deadlines #}
+              {% else %}
+
+                  {# small message when nothing is due soon #}
+                  <p class="text-muted small">No upcoming deadlines.</p>
+
+              {# end upcoming deadlines check #}
+              {% endif %}
+          </div>
+      </div>
+
+    {# end owner check #}
+    {% endif %}
+  </div>
+
+
+  <div class="col-lg-8">
+
+    {# card that shows courses teaching or enrolled #}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">
+
+        {# show the correct header text based on role #}
+        {% if target_role == "TEACHER" %}Teaching Courses{% else %}Registered Courses{% endif %}
+      </div>
+    
+      <div class="card-body">
+
+        {# if the user is a teacher show teaching courses #}
+        {% if target_role == "TEACHER" %}
+          {# check if the teacher has any courses #}
+          {% if teaching_courses %}
+
+            <div class="row g-3">
+
+              {# go through each teaching course #}
+              {% for course in teaching_courses %}
+
+                {# one course column #}
+                <div class="col-md-6">
+
+                  {# small bordered box for the course #}
+                  <div class="border rounded p-3 h-100">
+
+                    {# show course title #}
+                    <strong>{{ course.title }}</strong>
+
+                    {# show a short version of the description #}
+                    <div class="small text-muted">{{ course.description|truncatewords:12 }}</div>
+
+                    {# link to the course details page #}
+                    <a href="{% url 'courses:detail' course.id %}" class="small">View course</a>
+                  </div>
+                </div>
+
+              {# end teaching courses loop #}
+              {% endfor %}
+            </div>
+
+          {# if no teaching courses exist show  message #}
+          {% else %}
+
+            {# message if no teaching courses #}
+            <p class="text-muted mb-0">No teaching courses.</p>
+
+         
+          {% endif %}
+
+        {# if not treat the user as a student and show enrolled courses #}
+        {% else %}
+
+          {# check if the student is enrolled in any courses #}
+          {% if enrolled_courses %}
+
+            <div class="row g-3">
+
+              {# go through each enrollment record #}
+              {% for e in enrolled_courses %}
+
+                {# one enrolled course column #}
+                <div class="col-md-6">
+
+                  {# small bordered box for the enrolled course #}
+                  <div class="border rounded p-3 h-100">
+
+                    {# show course title #}
+                    <strong>{{ e.course.title }}</strong>
+
+                    {# show the teacher username #}
+                    <div class="small text-muted">Teacher: {{ e.course.teacher.username }}</div>
+
+                    {# link to the course details page #}
+                    <a href="{% url 'courses:detail' e.course.id %}" class="small">View course</a>
+                  </div>
+                </div>
+
+             
+              {% endfor %}
+            </div>
+
+          {# if not enrolled show  message #}
+          {% else %}
+
+            {# message shown when there are no enrolled courses #}
+            <p class="text-muted mb-0">No enrolled courses.</p>
+
+          {# end enrolled courses check #}
+          {% endif %}
+
+        {# end role check #}
+        {% endif %}
+      </div>
+    </div>
+
+    {# only show the todo list if the viewer owns the profile #}
+    {% if viewer_is_owner %}
+
+      {# todo list card container #}
+      <div class="card shadow-sm mb-4">
+
+        {# header with title and today date #}
+        <div class="card-header d-flex justify-content-between align-items-center">
+
+          {# todo card title #}
+          <span>My To-Do List</span>
+
+          {# show todays date using djangos now tag #}
+          <span class="small text-muted">{% now "M d, Y" %}</span>
+        </div>
+
+        {# todo card body #}
+        <div class="card-body">
+
+          {# form to add a new todo item #}
+          <form method="post" action="{% url 'todo_create' %}" class="row g-2 mb-3">
+
+            {# security token for the todo form #}
+            {% csrf_token %}
+
+            {# todo title input column #}
+            <div class="col-md-6">
+              {{ todo_form.title }}
+            </div>
+
+            {# todo due date input column #}
+            <div class="col-md-4">
+              {{ todo_form.due_date }}
+            </div>
+
+            {# submit button column #}
+            <div class="col-md-2">
+              <button class="btn btn-sm btn-primary w-100">Add</button>
+            </div>
+          </form>
+
+          {# check if there are todo items to show #}
+          {% if todos %}
+            <div class="list-group">
+
+              {# loop through each todo item #}
+              {% for todo in todos %}
+
+                {# one todo row #}
+                <div class="list-group-item">
+
+                  {# layout for todo text and actions #}
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+
+                    {# left side: todo details #}
+                    <div>
+
+                      {# cross out text if the todo is done #}
+                      <div class="{% if todo.is_done %}text-decoration-line-through text-muted{% endif %}">
+                        {{ todo.title }}
+                      </div>
+
+                      {# show when the todo was created #}
+                      <div class="small text-muted mt-1">
+                        Created: {{ todo.created_at|date:"M d, Y H:i" }}
+                      </div>
+
+                      {# only show due date if it exists #}
+                      {% if todo.due_date %}
+
+                        {# show the due date #}
+                        <div class="small text-muted">
+                          Due: {{ todo.due_date|date:"M d, Y" }}
+                        </div>
+
+                      {# end due date check #}
+                      {% endif %}
+                    </div>
+
+                    {# right side: edit and delete actions #}
+                    <div class="d-flex gap-2">
+
+      
+                      <a href="{% url 'todo_edit' todo.id %}" class="btn btn-sm btn-outline-primary">
+                        Edit
+                      </a>
+
+                      {# form to delete the todo item #}
+                      <form method="post" action="{% url 'todo_delete' todo.id %}">
+
+                        {# security token for the delete form #}
+                        {% csrf_token %}
+
+                        {# delete button #}
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+
+              {# end todo loop #}
+              {% endfor %}
+            </div>
+
+          {# if there are no todos, show a message #}
+          {% else %}
+
+            {# message shown when there are no tasks yet #}
+            <p class="text-muted mb-0 small">No tasks yet.</p>
+
+          {% endif %}
+        </div>
+      </div>
+
+    {% endif %}
+
+    {# only show status posting for the owner who is a student #}
+    {% if viewer_is_owner and target_role == "STUDENT" %}
+
+      {# status update form card #}
+      <div class="card shadow-sm mb-4">
+
+        {# header title #}
+        <div class="card-header">Post Status Update</div>
+
+        {# card body content #}
+        <div class="card-body">
+
+          {# form to create a new status update #}
+          <form method="post" action="{% url 'status_create' %}">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              {{ status_form.content }}
+            </div>
+
+            {# submit button for posting status #}
+            <button class="btn btn-sm btn-primary">Post</button>
+          </form>
+        </div>
+      </div>
+
+    {% endif %}
+
+    {# show status updates if the user is a student or there are updates to show #}
+    {% if target_role == "STUDENT" or status_updates %}
+
+      <div class="card shadow-sm">
+
+        <div class="card-header">Status Updates</div>
+        <div class="card-body">
+
+          {# check if there are any status updates #}
+          {% if status_updates %}
+
+            <div class="list-group">
+
+              {# go through each status update #}
+              {% for s in status_updates %}
+
+                {# one status update item #}
+                <div class="list-group-item">
+
+                  {# show the created date and time #}
+                  <div class="small text-muted mb-1">{{ s.created_at|date:"M d, Y H:i" }}</div>
+
+                  {# show the status content text #}
+                  <div>{{ s.content }}</div>
+                </div>
+              {% endfor %}
+            </div>
+
+          {# if there are no updates show a message #}
+          {% else %}
+
+            {# message shown when there are no status updates #}
+            <p class="text-muted mb-0">No status updates yet.</p>
+
+          {% endif %}
+        </div>
+      </div>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

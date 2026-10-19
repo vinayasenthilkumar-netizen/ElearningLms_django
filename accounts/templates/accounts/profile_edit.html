@@ -1,0 +1,90 @@
+{# extend the main base layout file #}
+{% extends "base.html" %}
+
+{# set the page title  #}
+{% block title %}Edit Profile{% endblock %}
+
+
+{% block content %}
+
+{# top spacing area for the back button #}
+<div class="mb-3">
+
+  {# button link that takes the user back to the dashboard page #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'dashboard' %}">
+    ← Back to dashboard
+  </a>
+</div>
+
+
+<div class="card shadow-sm">
+
+
+  <div class="card-body">
+
+    {# page heading inside  card #}
+    <h1 class="h4 mb-3">Edit Profile</h1>
+
+    {# start the form and allow file upload for the profile photo #}
+    <form method="post" enctype="multipart/form-data">
+
+      {# security token to protect the form submission from malicious things #}
+      {% csrf_token %}
+
+    
+      <div class="row g-3">
+        {# first name field column #}
+        <div class="col-md-6">
+          {# label for the first name input #}
+          <label class="form-label">First name</label>
+
+          {# render the first name form field #}
+          {{ form.first_name }}
+        </div>
+
+        {# last name field column #}
+        <div class="col-md-6">
+          {# label for the last name input #}
+          <label class="form-label">Last name</label>
+
+          {# render the last name form field #}
+          {{ form.last_name }}
+        </div>
+
+        {# email field column #}
+        <div class="col-md-12">
+          {# label for the email input #}
+          <label class="form-label">Email</label>
+          {# render the email form field #}
+          {{ form.email }}
+        </div>
+        {# profile photo field column #}
+        <div class="col-md-12">
+
+          {# label for the photo upload input #}
+          <label class="form-label">Profile photo</label>
+
+          {# render the photo upload form field #}
+          {{ form.photo }}
+        </div>
+
+        {# bio field column #}
+        <div class="col-md-12">
+
+          {# label for the bio input #}
+          <label class="form-label">Bio</label>
+
+          {# render the bio form field #}
+          {{ form.bio }}
+        </div>
+      </div>
+
+      {# submit button to save the updated profile details #}
+      <button class="btn btn-primary mt-3">Save changes</button>
+
+    </form>
+  </div>
+</div>
+
+
+{% endblock %}
