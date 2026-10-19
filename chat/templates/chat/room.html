@@ -1,0 +1,289 @@
+
+{% extends "base.html" %}
+
+{% block title %}Chat - {{ course.title }}{% endblock %}
+
+{% block extra_head %}
+
+{# start the page styles for the chat layout #}
+<style>
+  /* outer wrapper to keep the chat centered */
+  .chat-shell {
+    max-width: 950px;
+    margin: 0 auto;
+  }
+
+  /* main chat card styling */
+  .chat-card {
+    border: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+  }
+
+  /* top header bar styling */
+  .chat-header {
+    background: #0d6efd;
+    color: #fff;
+    padding: 1rem 1.25rem;
+  }
+
+  /* header title text styling */
+  .chat-header-title {
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+
+  /* header subtitle text styling */
+  .chat-header-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+
+  /* message log area styling */
+  .chat-log {
+    background: #f8f9fa;
+    height: 460px;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+
+  /* styling for the empty state message */
+  .chat-empty {
+    text-align: center;
+    color: #6c757d;
+    padding: 3rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  /* wrapper for each chat message row */
+  .chat-message {
+    display: flex;
+    margin-bottom: 0.9rem;
+  }
+
+  /* align "my" messages to the right */
+  .chat-message.me {
+    justify-content: flex-end;
+  }
+
+  /* bubble styling for messages */
+  .chat-bubble {
+    max-width: 75%;
+    border-radius: 16px;
+    padding: 0.75rem 0.9rem;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+  }
+
+  /* bubble styling for "my" messages */
+  .chat-message.me .chat-bubble {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+  }
+
+  /* small meta text (name and time) */
+  .chat-meta {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    opacity: 0.8;
+  }
+
+  /* message text formatting rules */
+  .chat-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* bottom input area styling */
+  .chat-composer {
+    border-top: 1px solid #e9ecef;
+    background: #fff;
+    padding: 1rem;
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="chat-shell">
+
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+
+    {# link back to the course detail page #}
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:detail' course.id %}">
+      ← Back to course
+    </a>
+
+    {# show the course title on the right #}
+    <span class="text-muted small">{{ course.title }}</span>
+  </div>
+
+  <div class="card chat-card">
+
+    {# chat header area #}
+    <div class="chat-header">
+
+      {# chat header title text #}
+      <div class="chat-header-title">Live Course Chat</div>
+
+      {# chat header subtitle (course title) #}
+      <div class="chat-header-subtitle">{{ course.title }}</div>
+    </div>
+
+    {# scrollable message log area #}
+    <div id="chatLog" class="chat-log">
+
+      {# show messages if there are any #}
+      {% if chat_messages %}
+
+        {# loop through each message #}
+        {% for msg in chat_messages %}
+
+          {# add me class when the sender is the current user #}
+          <div class="chat-message {% if msg.sender == user %}me{% endif %}">
+
+            {# message bubble container #}
+            <div class="chat-bubble">
+
+              {# message meta (sender and time) #}
+              <div class="chat-meta">
+                {{ msg.sender.username }} • {{ msg.created_at|date:"M d, Y H:i" }}
+              </div>
+
+              {# actual message text #}
+              <div class="chat-text">{{ msg.message }}</div>
+            </div>
+          </div>
+
+        {% endfor %}
+
+      {# show empty message if there are no messages #}
+      {% else %}
+
+        {# empty state message shown when chat has no messages yet #}
+        <div class="chat-empty" id="chatEmpty">No messages yet. Start the conversation.</div>
+
+      {% endif %}
+    </div>
+
+    <div class="chat-composer">
+
+      <form id="chatForm" class="row g-2">
+
+        {# input field column #}
+        <div class="col-md-10">
+
+          {# message input box #}
+          <input id="chatMessageInput"
+                 type="text"
+                 class="form-control"
+                 placeholder="Type a message..."
+                 autocomplete="off">
+        </div>
+
+        {# send button column #}
+        <div class="col-md-2">
+
+          {# submit button for sending the message #}
+          <button class="btn btn-primary w-100" type="submit">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# start the chat javascript logic #}
+<script>
+(function () {
+  const log = document.getElementById("chatLog");
+  // get the chat form element
+  const form = document.getElementById("chatForm");
+  // get the message input element
+  const input = document.getElementById("chatMessageInput");
+
+  // choose ws or wss based on whether the site is https
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  // create the websocket connection for this course chat room
+  const socket = new WebSocket(`${protocol}://${window.location.host}/ws/chat/{{ course.id }}/`);
+
+  // helper to keep the newest message visible
+  function scrollToBottom() {
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function appendMessage(sender, message, createdAt, isMe) {
+    // remove the empty state message if it exists
+    const empty = document.getElementById("chatEmpty");
+    // delete the empty element so messages show normally
+    if (empty) empty.remove();
+
+    // create a new message row container
+    const item = document.createElement("div");
+    // add the base class and optional "me" class
+    item.className = "chat-message" + (isMe ? " me" : "");
+
+    // build the message bubble html
+    item.innerHTML = `
+      <div class="chat-bubble">
+        <div class="chat-meta">${sender} • ${createdAt}</div>
+        <div class="chat-text"></div>
+      </div>
+    `;
+
+    // set the message text safely as plain text
+    item.querySelector(".chat-text").textContent = message;
+    // add the new message to the log
+    log.appendChild(item);
+    // scroll to the newest message
+    scrollToBottom();
+  }
+
+  // run when a websocket message is received
+  socket.onmessage = function (e) {
+    // parse the incoming json data
+    const data = JSON.parse(e.data);
+
+    // add the new message to the chat log
+    appendMessage(
+      data.sender,
+      data.message,
+      data.created_at,
+      data.sender === "{{ user.username }}"
+    );
+  };
+
+  // run when the form is submitted
+  form.addEventListener("submit", function (e) {
+    // stop the page from reloading
+    e.preventDefault();
+
+    // read and trim the message text
+    const message = input.value.trim();
+    // stop if the message is empty
+    if (!message) return;
+
+    // send the message as json to the websocket server
+    socket.send(JSON.stringify({ message }));
+    // clear the input after sending
+    input.value = "";
+    // keep focus in the input box
+    input.focus();
+  });
+
+  // allow enter key to submit the form
+  input.addEventListener("keyup", function (e) {
+    // if the key is enter, submit the form
+    if (e.key === "Enter") {
+      form.requestSubmit();
+    }
+  });
+
+  // scroll to bottom on initial page load
+  scrollToBottom();
+})();
+</script>
+
+{% endblock %}
