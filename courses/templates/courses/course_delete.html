@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# main page container with top spacing #}
+<div class="container mt-4">
+
+    {# page heading to show this is the delete confirmation screen #}
+    <h2>delete course</h2>
+
+    {# warning box to make the action clear to the teacher #}
+    <div class="alert alert-warning">
+        {# ask the user to confirm which course is being deleted #}
+        <p>are you sure you want to delete <strong>{{ course.title }}</strong>?</p>
+
+        <p>this will also remove related data such as enrolments, folders, materials, assignments, submissions, feedback, and chat messages linked to this course.</p>
+    </div>
+
+    {# form submits a post request to confirm the delete action #}
+    <form method="post">
+        {# csrf token protects the form from csrf attacks #}
+        {% csrf_token %}
+
+        {# submit button that permanently deletes the course #}
+        <button type="submit" class="btn btn-danger">yes, delete course</button>
+
+        {# cancel link sends the user back to the course detail page #}
+        <a href="{% url 'courses:detail' course.id %}" class="btn btn-secondary">cancel</a>
+    </form>
+</div>
+{% endblock %}

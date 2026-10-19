@@ -1,0 +1,76 @@
+
+{% extends "base.html" %}
+{% block title %}Edit Assignment{% endblock %}
+{% block content %}
+<div class="mb-3">
+
+  {# link back to the submissions page for this course #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:submissions_page' course.id %}">
+    ← Back to submissions
+  </a>
+</div>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h2 class="h4 mb-3">Edit Assignment</h2>
+
+    {# show which course this assignment belongs to #}
+    <p class="text-muted mb-3">Course: {{ course.title }}</p>
+
+    {% if error %}
+
+      {# alert box for errors #}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {# start the form and send data using post #}
+    <form method="post">
+
+      {# csrf token to protect the form submission #}
+      {% csrf_token %}
+
+      {# title input section #}
+      <div class="mb-3">
+
+        {# label for the title field #}
+        <label class="form-label">Title</label>
+
+        {# text input for assignment title (pre filled) #}
+        <input type="text"
+               name="title"
+               class="form-control"
+               value="{{ assignment.title }}"
+               required>
+      </div>
+
+      {# instructions textarea section #}
+      <div class="mb-3">
+
+        {# label for the instructions field #}
+        <label class="form-label">Instructions</label>
+
+        {# textarea for assignment instructions (pre filled) #}
+        <textarea name="instructions"
+                  class="form-control"
+                  rows="4">{{ assignment.instructions }}</textarea>
+      </div>
+
+      {# due date input section #}
+      <div class="mb-3">
+
+        {# label for the due date field #}
+        <label class="form-label">Due date (optional)</label>
+
+        {# datetime input for due date #}
+        <input type="datetime-local"
+               name="due_date"
+               class="form-control"
+               value="{% if assignment.due_date %}{{ assignment.due_date|date:'Y-m-d\\TH:i' }}{% endif %}">
+      </div>
+
+      {# submit button to save the assignment changes #}
+      <button class="btn btn-primary">Save changes</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

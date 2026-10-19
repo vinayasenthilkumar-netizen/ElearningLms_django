@@ -1,0 +1,31 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+{# page heading for creating a folder #}
+<h3>Create Folder</h3>
+
+{# form to create a new folder #}
+<form method="post">
+
+  {# csrf token to protect the form submission #}
+  {% csrf_token %}
+
+  {# folder name input section #}
+  <div class="mb-3">
+
+    {# label for the folder name input #}
+    <label>Folder Name</label>
+
+    {# text input for the folder name #}
+    <input type="text" name="name" class="form-control" required>
+  </div>
+
+  {# submit button to create the folder #}
+  <button type="submit" class="btn btn-primary">
+    Create Folder
+  </button>
+
+</form>
+{% endblock %}

@@ -1,0 +1,604 @@
+{# extend the main base layout file #}
+{% extends "base.html" %}
+
+{# set the page title shown in the browser tab #}
+{% block title %}Courses{% endblock %}
+
+{# start the main content section for this page #}
+{% block content %}
+
+{# header section (student vs teacher) #}
+{# ---------- header (student vs teacher) ---------- #}
+{% if user.profile.role == "STUDENT" %}
+  {# top row with title and view dropdown #}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    {# page title for students #}
+    <h2 class="mb-0">My Courses</h2>
+
+    {# form that changes the view dropdown #}
+    <form method="get">
+      {# dropdown to switch between enrolled and all courses #}
+      <select name="view" class="form-select" onchange="this.form.submit()">
+        {# option for enrolled courses view #}
+        <option value="enrolled" {% if view == "enrolled" %}selected{% endif %}>Enrolled Courses</option>
+        {# option for all courses view #}
+        <option value="all" {% if view == "all" %}selected{% endif %}>All Courses</option>
+      </select>
+    </form>
+  </div>
+
+  {# search card for students #}
+  <div class="card shadow-sm mb-4">
+    {# card body for padding #}
+    <div class="card-body">
+      {# search form using get so query shows in url #}
+      <form method="get" class="row g-2">
+        {# keep the current view value when searching #}
+        <input type="hidden" name="view" value="{{ view }}">
+
+        {# search input column #}
+        <div class="col-md-7">
+          {# text input for search query #}
+          <input type="text"
+                 name="q"
+                 value="{{ search_q }}"
+                 class="form-control"
+                 placeholder="Search courses, students, teachers...">
+        </div>
+
+        {# scope dropdown column #}
+        <div class="col-md-3">
+          {# dropdown to pick what to search #}
+          <select name="scope" class="form-select">
+            {# search courses option #}
+            <option value="courses" {% if search_scope == "courses" %}selected{% endif %}>Courses</option>
+            {# search students option #}
+            <option value="students" {% if search_scope == "students" %}selected{% endif %}>Students</option>
+            {# search teachers option #}
+            <option value="teachers" {% if search_scope == "teachers" %}selected{% endif %}>Teachers</option>
+          </select>
+        </div>
+
+        {# search button column #}
+        <div class="col-md-2">
+          {# submit button to run the search #}
+          <button class="btn btn-outline-dark w-100">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{# teacher header section #}
+{% elif user.profile.role == "TEACHER" %}
+  {# top row with title and create course button #}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    {# page title for teachers #}
+    <h2 class="mb-0">My Teaching Courses</h2>
+
+    {# link to the create course page #}
+    <a class="btn btn-primary" href="{% url 'courses:create' %}">
+      {# button text #}
+      + Create Course
+    </a>
+  </div>
+
+  {# search card for teachers #}
+  <div class="card shadow-sm mb-4">
+    {# card body for padding #}
+    <div class="card-body">
+      {# search form using get so query shows in url #}
+      <form method="get" class="row g-2">
+        {# search input column #}
+        <div class="col-md-7">
+          {# text input for search query #}
+          <input type="text"
+                 name="q"
+                 value="{{ search_q }}"
+                 class="form-control"
+                 placeholder="Search my courses, students, teachers...">
+        </div>
+
+        {# scope dropdown column #}
+        <div class="col-md-3">
+          {# dropdown to pick what to search #}
+          <select name="scope" class="form-select">
+            {# search my courses option #}
+            <option value="my_courses" {% if search_scope == "my_courses" %}selected{% endif %}>My Courses</option>
+            {# search students option #}
+            <option value="students" {% if search_scope == "students" %}selected{% endif %}>Students</option>
+            {# search teachers option #}
+            <option value="teachers" {% if search_scope == "teachers" %}selected{% endif %}>Teachers</option>
+          </select>
+        </div>
+
+        {# search button column #}
+        <div class="col-md-2">
+          {# submit button to run the search #}
+          <button class="btn btn-outline-dark w-100">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{# end role header checks #}
+{% endif %}
+
+{# main layout wrapper #}
+{# ---------- main layout ---------- #}
+<div class="row g-4">
+
+  {# left side main results label (original html comment kept) #}
+  <!-- LEFT: MAIN RESULTS -->
+
+  {# left column for results and courses #}
+  <div class="col-lg-8">
+
+    {# check if we should show user search results instead of courses #}
+    {% if search_q and user.profile.role == "TEACHER" and search_scope != "my_courses" or search_q and user.profile.role == "STUDENT" and search_scope != "courses" %}
+
+      {# top row for results title and count #}
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        {# results heading text #}
+        <h5 class="mb-0">
+          {# show the scope and the query text #}
+          {{ search_scope|title }} results for “{{ search_q }}”
+        </h5>
+        {# show how many users were found #}
+        <span class="text-muted small">{{ result_users|length }} found</span>
+      </div>
+
+      {# grid for user cards #}
+      <div class="row g-4">
+        {# loop through each user result #}
+        {% for u in result_users %}
+          {# user card column #}
+          <div class="col-md-6">
+            {# user card container #}
+            <div class="card h-100 shadow-sm border-0">
+              {# user card body #}
+              <div class="card-body">
+                {# top row with name and badge #}
+                <div class="d-flex justify-content-between align-items-start">
+                  {# left side name area #}
+                  <div>
+                    {# user display name heading #}
+                    <h5 class="card-title mb-1">
+                      {# link to the user profile page #}
+                      <a href="{% url 'user_profile' u.username %}">
+                        {# show full name if available #}
+                        {% if u.first_name or u.last_name %}
+                          {# show first and last name #}
+                          {{ u.first_name }} {{ u.last_name }}
+                        {% else %}
+                          {# otherwise show username #}
+                          {{ u.username }}
+                        {% endif %}
+                      </a>
+                    </h5>
+                    {# show @username line #}
+                    <div class="text-muted small">@{{ u.username }}</div>
+                  </div>
+
+                  {# badge showing what type this result is #}
+                  <span class="badge text-bg-secondary">
+                    {# make scope singular by slicing off last char #}
+                    {{ search_scope|title|slice:":-1" }}
+                  </span>
+                </div>
+
+                {# show email or a fallback text #}
+                <div class="mt-3 small text-muted">
+                  {{ u.email|default:"No email provided" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        {# empty state if no users were found #}
+        {% empty %}
+          {# full width column for empty message #}
+          <div class="col-12">
+            {# info alert for empty search #}
+            <div class="alert alert-info mb-0">No {{ search_scope }} found.</div>
+          </div>
+        {# end loop #}
+        {% endfor %}
+      </div>
+
+    {# otherwise show course cards #}
+    {% else %}
+
+      {# grid for course cards #}
+      <div class="row g-4">
+        {# loop through each course #}
+        {% for course in courses %}
+          {# course card column #}
+          <div class="col-md-6">
+            {# course card container #}
+            <div class="card h-100 shadow-sm border-0">
+
+              {# course image (random placeholder) #}
+              <img class="card-img-top"
+                   style="height:180px; object-fit:cover;"
+                   src="https://picsum.photos/seed/course{{ course.id }}/600/300"
+                   alt="{{ course.title }}">
+
+              {# course card body with flexible layout #}
+              <div class="card-body d-flex flex-column">
+                {# top row with title and optional badge #}
+                <div class="d-flex justify-content-between align-items-start">
+                  {# course title #}
+                  <h5 class="card-title mb-1">{{ course.title }}</h5>
+
+                  {# show enrolled badge if student is enrolled #}
+                  {% if user.profile.role == "STUDENT" and course.is_enrolled %}
+                    {# enrolled badge #}
+                    <span class="badge bg-success">Enrolled</span>
+                  {% endif %}
+                </div>
+
+                {# show teacher username #}
+                <small class="text-muted mb-2">Teacher: {{ course.teacher.username }}</small>
+
+                {# show course description (shortened) #}
+                <p class="card-text text-muted mb-3">
+                  {{ course.description|default:"No description yet."|truncatewords:18 }}
+                </p>
+
+                {# bottom area for buttons #}
+                <div class="mt-auto d-flex gap-2">
+                  {# view course button #}
+                  <a href="{% url 'courses:detail' course.id %}" class="btn btn-primary w-100">
+                    View course
+                  </a>
+
+                  {# show enroll button for students in all view when not enrolled #}
+                  {% if user.profile.role == "STUDENT" and view == "all" and not course.is_enrolled %}
+                    {# enroll form for this course #}
+                    <form method="post" action="{% url 'courses:enroll' course.id %}">
+                      {# csrf token to protect the form submission #}
+                      {% csrf_token %}
+                      {# enroll submit button #}
+                      <button class="btn btn-outline-success">Enroll</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        {# empty state if no courses were found #}
+        {% empty %}
+          {# full width column for empty message #}
+          <div class="col-12">
+            {# info alert for empty results #}
+            <div class="alert alert-info">No courses found.</div>
+          </div>
+        {# end loop #}
+        {% endfor %}
+      </div>
+
+    {# end main if/else #}
+    {% endif %}
+
+  </div>
+
+  {# right side notifications label (original html comment kept) #}
+  <!-- RIGHT: NOTIFICATIONS -->
+
+  {# right column for notifications #}
+  <div class="col-lg-4">
+    {# notifications card container #}
+    <div class="card shadow-sm">
+      {# card header with title and unread badge #}
+      <div class="card-header d-flex justify-content-between align-items-center">
+        {# header title #}
+        <span>Notifications</span>
+        {# show unread badge only if unread_count exists #}
+        {% if unread_count %}
+          {# unread count badge #}
+          <span id="unreadBadge" class="badge text-bg-danger">{{ unread_count }}</span>
+        {% endif %}
+      </div>
+
+      {# card body with compact padding #}
+      <div class="card-body p-2">
+        {# list wrapper for notifications #}
+        <div id="notificationsList" class="list-group list-group-flush">
+          {# loop through each notification #}
+          {% for n in notifications %}
+            {# one notification item wrapper #}
+            <div id="note{{ n.id }}" class="list-group-item">
+              {# row layout for content and actions #}
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                {# left side notification content #}
+                <div>
+                  {# title row #}
+                  <div class="small fw-semibold">
+                    {# show new badge if notification is unread #}
+                    {% if not n.is_read %}
+                      <span class="badge text-bg-primary me-1">New</span>
+                    {% endif %}
+                    {# show notification title #}
+                    {{ n.title }}
+                  </div>
+
+                  {# show message if it exists #}
+                  {% if n.message %}
+                    <div class="small text-muted mt-1">{{ n.message }}</div>
+                  {% endif %}
+
+                  {# show created date/time #}
+                  <div class="small text-muted mt-1">
+                    {{ n.created_at|date:"M d, Y H:i" }}
+                  </div>
+
+                  {# show link if available, otherwise link to course if set #}
+                  {% if n.link %}
+                    <a href="{{ n.link }}" class="small">Open</a>
+                  {% elif n.course %}
+                    <a href="{% url 'courses:detail' n.course.id %}" class="small">View course</a>
+                  {% endif %}
+                </div>
+
+                {# right side action buttons #}
+                <div class="d-flex flex-column gap-1">
+                  {# disable actions for reminder notifications #}
+                  {% if "due in" not in n.title|lower %}
+                    {# show read button only if not already read #}
+                    {% if not n.is_read %}
+                      <button class="btn btn-sm btn-outline-secondary markReadBtn"
+                              data-id="{{ n.id }}"
+                              data-url="{% url 'notification_read' n.id %}">
+                        Read
+                      </button>
+                    {% endif %}
+                
+                    {# delete button #}
+                    <button class="btn btn-sm btn-outline-danger deleteNoteBtn"
+                            data-id="{{ n.id }}"
+                            data-url="{% url 'notification_delete' n.id %}">
+                      ×
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {# end notifications loop #}
+          {% endfor %}
+        </div>
+
+        {# show empty message if there are no notifications #}
+        {% if not notifications %}
+          <p id="noNotificationsText" class="text-muted mb-0 small">No notifications yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# notifications live update script (js comments used inside) #}
+<script>
+(function () {
+  // get the notifications list container
+  const list = document.getElementById("notificationsList");
+  // stop if the list does not exist
+  if (!list) return;
+
+  // helper to show or hide the unread badge
+  function updateUnreadBadge(count) {
+    // try to find the unread badge
+    let unreadBadge = document.getElementById("unreadBadge");
+
+    // if count is more than 0, make sure badge exists
+    if (count > 0) {
+      // create badge if it does not exist
+      if (!unreadBadge) {
+        // find the header area
+        const header = document.querySelector(".card-header.d-flex.justify-content-between.align-items-center");
+        // only continue if header exists
+        if (header) {
+          // create a new span element
+          unreadBadge = document.createElement("span");
+          // set the id for later updates
+          unreadBadge.id = "unreadBadge";
+          // set bootstrap badge classes
+          unreadBadge.className = "badge text-bg-danger";
+          // add it to the header
+          header.appendChild(unreadBadge);
+        }
+      }
+      // update the badge text if badge exists now
+      if (unreadBadge) unreadBadge.textContent = count;
+    } else {
+      // remove the badge if count is 0
+      if (unreadBadge) unreadBadge.remove();
+    }
+  }
+
+  // handler for marking a notification as read
+  function handleMarkRead() {
+    // send a post request to the read endpoint
+    fetch(this.dataset.url, {
+      // use post method
+      method: "POST",
+      // send csrf and ajax header
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    // parse json response
+    .then(res => res.json())
+    // handle response data
+    .then(data => {
+      // only update ui if backend says success
+      if (data.success) {
+        // find the notification card by id
+        const card = document.getElementById("note" + data.notification_id);
+        // only continue if card exists
+        if (card) {
+          // find the "new" badge inside the card
+          const newBadge = card.querySelector(".badge.text-bg-primary");
+          // remove it if found
+          if (newBadge) newBadge.remove();
+        }
+
+        // remove the read button that was clicked
+        this.remove();
+        // update the unread badge count
+        updateUnreadBadge(data.unread_count);
+      }
+    });
+  }
+
+  // handler for deleting a notification
+  function handleDelete() {
+    // send a post request to the delete endpoint
+    fetch(this.dataset.url, {
+      // use post method
+      method: "POST",
+      // send csrf and ajax header
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    })
+    // parse json response
+    .then(res => res.json())
+    // handle response data
+    .then(data => {
+      // only update ui if backend says success
+      if (data.success) {
+        // find the notification card by id
+        const card = document.getElementById("note" + data.notification_id);
+        // remove the card if found
+        if (card) card.remove();
+
+        // update the unread badge count
+        updateUnreadBadge(data.unread_count);
+
+        // if list is empty, show the empty text
+        if (!list.children.length) {
+          // try to find existing empty text
+          let emptyText = document.getElementById("noNotificationsText");
+          // create it if it does not exist
+          if (!emptyText) {
+            // create a new p element
+            emptyText = document.createElement("p");
+            // set its id
+            emptyText.id = "noNotificationsText";
+            // set its classes
+            emptyText.className = "text-muted mb-0 small";
+            // set its text content
+            emptyText.textContent = "No notifications yet.";
+            // add it below the list
+            list.parentElement.appendChild(emptyText);
+          }
+        }
+      }
+    });
+  }
+
+  // attach mark read handlers to existing buttons
+  document.querySelectorAll(".markReadBtn").forEach((btn) => {
+    btn.addEventListener("click", handleMarkRead);
+  });
+
+  // attach delete handlers to existing buttons
+  document.querySelectorAll(".deleteNoteBtn").forEach((btn) => {
+    btn.addEventListener("click", handleDelete);
+  });
+
+  // prevent duplicate socket if script runs again
+  if (window.notificationsSocket) {
+    window.notificationsSocket.close();
+  }
+
+  // choose ws or wss based on whether the site is https
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  // open the notifications websocket connection
+  window.notificationsSocket = new WebSocket(`${protocol}://${window.location.host}/ws/notifications/`);
+  // store a local reference to the socket
+  const socket = window.notificationsSocket;
+
+  socket.onmessage = function (e) {
+    // parse the incoming json string
+    const data = JSON.parse(e.data);
+
+    // stop duplicate ui insert
+    const existing = document.getElementById(`note${data.id}`);
+    if (existing) return;
+    const emptyText = document.getElementById("noNotificationsText");
+    if (emptyText) emptyText.remove();
+
+    // read current unread count from badge
+    const unreadBadge = document.getElementById("unreadBadge");
+    const current = unreadBadge ? parseInt(unreadBadge.textContent || "0", 10) : 0;
+    // update unread badge with +1
+    updateUnreadBadge(current + 1);
+
+    // check if this is a reminder notification
+    const isReminder = data.title.toLowerCase().includes("due in");
+
+    // create the new notification element
+    const item = document.createElement("div");
+    item.id = `note${data.id}`;
+    item.className = "list-group-item";
+
+    // build the html for the new notification item
+    item.innerHTML = `
+      <!-- wrapper row for notification content and actions -->
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <!-- title line with new badge -->
+          <div class="small fw-semibold">
+            <!-- new badge -->
+            <span class="badge text-bg-primary me-1">New</span>
+            ${data.title}
+          </div>
+          ${data.message ? `<div class="small text-muted mt-1">${data.message}</div>` : ""}
+          <!-- created time line -->
+          <div class="small text-muted mt-1">${data.created_at}</div>
+          <!-- optional open link -->
+          ${data.link ? `<a href="${data.link}" class="small">Open</a>` : ""}
+        </div>
+
+        ${
+          isReminder
+            ? ``
+            : `
+            <div class="d-flex flex-column gap-1">
+              <button class="btn btn-sm btn-outline-secondary markReadBtn"
+                      data-id="${data.id}"
+                      data-url="/accounts/notifications/${data.id}/read/">
+                Read
+              </button>
+
+              <!-- delete button -->
+              <button class="btn btn-sm btn-outline-danger deleteNoteBtn"
+                      data-id="${data.id}"
+                      data-url="/accounts/notifications/${data.id}/delete/">
+                ×
+              </button>
+            </div>
+          `
+        }
+      </div>
+    `;
+
+    // add the new notification at the top
+    list.prepend(item);
+
+    // find the new mark read button
+    const readBtn = item.querySelector(".markReadBtn");
+    const deleteBtn = item.querySelector(".deleteNoteBtn");
+
+    // attach handler to mark read button if it exists
+    if (readBtn) readBtn.addEventListener("click", handleMarkRead);
+    // attach handler to delete button if it exists
+    if (deleteBtn) deleteBtn.addEventListener("click", handleDelete);
+  };
+})();
+</script>
+
+{% endblock %}

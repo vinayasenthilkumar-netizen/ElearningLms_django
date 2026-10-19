@@ -1,0 +1,45 @@
+
+{% extends "base.html" %}
+
+{% block title %}Delete Assignment{% endblock %}
+{% block content %}
+<div class="mb-3">
+
+  {# link back to the submissions page for this course #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:submissions_page' course.id %}">
+    ← Back to submissions
+  </a>
+</div>
+<div class="card border-danger shadow-sm">
+  <div class="card-body">
+    <h2 class="h4 text-danger mb-3">Delete Assignment</h2>
+
+    {# confirmation text asking the user to confirm deletion #}
+    <p>
+      Are you sure you want to delete
+      <strong>{{ assignment.title }}</strong>?
+    </p>
+
+    {# warning message explaining what else will be deleted #}
+    <div class="alert alert-warning small">
+      This will also delete all student submissions for this assignment.
+    </div>
+
+    {# form that submits the delete action #}
+    <form method="post" class="d-flex gap-2">
+
+      {# csrf token to protect the form submission #}
+      {% csrf_token %}
+
+      {# submit button to confirm deletion #}
+      <button class="btn btn-danger">Yes, delete</button>
+
+      {# link to cancel and go back to submissions page #}
+      <a href="{% url 'courses:submissions_page' course.id %}" class="btn btn-outline-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

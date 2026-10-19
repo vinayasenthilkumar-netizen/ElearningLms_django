@@ -1,0 +1,703 @@
+
+{% extends "base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+
+
+  <div class="mb-3">
+    {# link back to the courses list page #}
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:list' %}">← Back to courses</a>
+  </div>
+
+  <div class="card mb-4">
+
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="h3 mb-1">{{ course.title }}</h1>
+          {# show the teacher username #}
+          <div class="text-muted">Teacher: {{ course.teacher.username }}</div>
+        </div>
+
+        {# only show this badge if the logged in user is the teacher #}
+        {% if course.teacher == user %}
+          {# badge that tells the teacher they own the course #}
+          <span class="badge text-bg-primary">You own this course</span>
+        {% endif %}
+      </div>
+
+      {# show the course description #}
+      <p class="mt-3 mb-0">{{ course.description }}</p>
+    </div>
+  </div>
+
+  {# main content row with two columns #}
+  <div class="row g-4">
+    {# enrolments section label #}
+
+    {# left column for enrolments and enroll button #}
+    <div class="col-lg-5">
+      <div class="card p-3 d-flex flex-row justify-content-between align-items-center">
+    
+        {# left side student count #}
+        <div>
+           {# show how many students are enrolled #}
+           <strong id="enrollmentCount">{{ enrollments|length }}</strong> Students Enrolled
+        </div>
+    
+        {# button to open the classmates modal #}
+        <button class="btn btn-outline-secondary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#studentsModal">
+          View Classmates
+        </button>
+    
+      </div>
+    
+      {# enroll button section #}
+
+      {# only show enroll ui if user is a student and not enrolled #}
+      {% if is_student and not is_enrolled %}
+        {# form that posts to the enroll endpoint #}
+        <form id="enrollForm" method="post" action="{% url 'courses:enroll' course.id %}" class="mt-3">
+          {# csrf token to protect the form submission #}
+          {% csrf_token %}
+          {# submit button for enrolling #}
+          <button id="enrollBtn" class="btn btn-success w-100">
+            Enroll in this course
+          </button>
+        </form>
+
+        {# area to show ajax enroll messages #}
+        <div id="enrollMsg" class="small mt-2"></div>
+      {% endif %}
+    
+    </div>
+
+
+    {# feedback section label#}
+    <div class="col-lg-7">
+
+      {# feedback card container #}
+      <div class="card">
+        {# feedback card header with rating summary #}
+        <div class="card-header d-flex justify-content-between">
+          {# header title #}
+          <span>Feedback</span>
+
+          {# rating summary on the right #}
+          <span class="small text-muted">
+            {# show average rating if there is feedback #}
+            {% if feedback_count %}
+            {# for emojis on windows press windows button and full stop #}
+              ⭐ {{ avg_rating|floatformat:1 }}/5
+            {% else %}
+              No reviews
+            {% endif %}
+          </span>
+        </div>
+
+        {# feedback card body #}
+        <div class="card-body p-2">
+
+          {# only enrolled students can submit feedback #}
+          {% if is_student and is_enrolled %}
+          {# feedback form posts to feedback submit route #}
+          <form id="feedbackForm" method="post" action="{% url 'courses:feedback_submit' course.id %}">
+            {# csrf token to protect the form submission #}
+            {% csrf_token %}
+
+            {# row layout for feedback inputs #}
+            <div class="row g-2">
+
+              {# rating input column #}
+              <div class="col-3">
+                {# number input for rating 1 to 5 #}
+                <input type="number"
+                      name="rating"
+                      min="1"
+                      max="5"
+                      class="form-control form-control-sm"
+                      placeholder="1-5"
+                      required>
+              </div>
+
+              {# comment input column #}
+              <div class="col-7">
+                {# text input for optional comment #}
+                <input type="text"
+                      name="comment"
+                      class="form-control form-control-sm"
+                      placeholder="Leave feedback...">
+              </div>
+
+              {# submit button column #}
+              <div class="col-2">
+                {# submit button for feedback #}
+                <button class="btn btn-sm btn-primary w-100">
+                  Send
+                </button>
+              </div>
+
+            </div>
+
+          </form>
+          {% endif %}
+
+          {# only the teacher can view the feedback list #}
+          {% if user == course.teacher and feedback_list %}
+          {# small divider line #}
+          <hr class="my-2">
+          
+          {# collapsible details for feedback list #}
+          <details>
+            {# clickable summary title #}
+            <summary class="small text-primary" style="cursor:pointer;">
+              View feedback ({{ feedback_count }})
+            </summary>
+          
+            {# list of feedback items #}
+            <ul class="list-group mt-2 small">
+          
+              {# loop through each feedback entry #}
+              {% for fb in feedback_list %}
+          
+                {# one feedback row #}
+                <li class="list-group-item py-1">
+          
+                  {# show the student username #}
+                  <strong>{{ fb.student.username }}</strong>
+                  {# show the rating #}
+                  ⭐ {{ fb.rating }}
+          
+                  {# only show comment if it exists #}
+                  {% if fb.comment %}
+                    {# show the comment text #}
+                    <div class="text-muted">{{ fb.comment }}</div>
+                  {% endif %}
+          
+                </li>
+          
+              {# end feedback loop #}
+              {% endfor %}
+          
+            </ul>
+          </details>
+          {% endif %}
+
+        </div>
+      </div>
+
+    </div>
+
+
+    {# classmates modal section #}
+
+    {# bootstrap modal wrapper #}
+    <div class="modal fade" id="studentsModal" tabindex="-1">
+      {# modal size wrapper #}
+      <div class="modal-dialog modal-lg">
+        {# modal content box #}
+        <div class="modal-content">
+    
+          {# modal header area #}
+          <div class="modal-header">
+            {# modal title #}
+            <h5 class="modal-title">Classmates</h5>
+            {# close button for the modal #}
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"></button>
+          </div>
+    
+          {# modal body area #}
+          <div class="modal-body">
+
+            {# list group for enrolled students #}
+            <ul class="list-group">
+
+              {# loop through each enrollment record #}
+              {% for e in enrollments %}
+                {# one student row with id for easy removal #}
+                <li id="student{{ e.student.id }}" class="list-group-item d-flex justify-content-between align-items-center">
+
+                  {# show the student username #}
+                  {{ e.student.username }}
+
+                  {# only show remove/block buttons to the teacher #}
+                  {% if user == course.teacher %}
+                    <div>
+                      {# remove button that calls the remove endpoint #}
+                      <button class="btn btn-sm btn-warning removeBtn"
+                              data-url="{% url 'courses:remove_student' course.id e.student.id %}"
+                              data-id="{{ e.student.id }}">
+                        Remove
+                      </button>
+
+                      {# block button that calls the block endpoint #}
+                      <button class="btn btn-sm btn-danger blockBtn"
+                              data-url="{% url 'courses:block_student' course.id e.student.id %}"
+                              data-id="{{ e.student.id }}">
+                        Block
+                      </button>
+                    </div>
+                  {% endif %}
+
+                </li>
+              {% endfor %}
+
+            </ul>
+
+            {% if user == course.teacher %}
+              {# show blocked students under the enrolled list #}
+              <hr>
+              <h6 class="mt-3">Blocked Students</h6>
+
+              {% if blocked_students %}
+                <ul class="list-group">
+                  {% for b in blocked_students %}
+                    {# one blocked student row #}
+                    <li id="blocked{{ b.student.id }}" class="list-group-item d-flex justify-content-between align-items-center">
+
+                      {# show the blocked student's username #}
+                      {{ b.student.username }}
+
+                      {# unblock button for the teacher #}
+                      <button class="btn btn-sm btn-success unblockBtn"
+                              data-url="{% url 'courses:unblock_student' course.id b.student.id %}"
+                              data-id="{{ b.student.id }}">
+                        Unblock
+                      </button>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted small mb-0">No blocked students</p>
+              {% endif %}
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# course actions section #}
+
+    {# actions card container #}
+    <div class="card shadow-sm border-0 mb-4">
+      {# actions card body layout #}
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        {# left side text for actions #}
+        <div>
+          {# actions title #}
+          <div class="fw-semibold">Course Actions</div>
+          {# actions subtitle #}
+          <div class="small text-muted">Manage content and open course tools</div>
+        </div>
+    
+        {# right side action buttons #}
+        <div class="d-flex flex-wrap gap-2">
+          {# only the teacher who owns the course should see these management options #}
+          {% if user == course.teacher %}
+            {# bootstrap dropdown for teacher-only course actions #}
+            <div class="dropdown">
+
+              {# button that opens the manage menu #}
+              <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Manage
+              </button>
+
+              {# dropdown menu with course management links #}
+              <ul class="dropdown-menu dropdown-menu-end">
+
+                {# lets the teacher edit the course title or description #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:edit' course.id %}">
+                    Edit Course
+                  </a>
+                </li>
+
+                {# lets the teacher delete the whole course #}
+                <li>
+                  <a class="dropdown-item text-danger" href="{% url 'courses:delete' course.id %}">
+                    Delete Course
+                  </a>
+                </li>
+
+                {# small divider to separate course actions from content actions #}
+                <li><hr class="dropdown-divider"></li>
+
+                {# link to create a new folder inside the course #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:folder_create' course.id %}">
+                    + Add Folder
+                  </a>
+                </li>
+
+                {# link to upload a new material file for the course #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:material_add' course.id %}">
+                    + Upload Material
+                  </a>
+                </li>
+
+                {# link to create a new assignment for students #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:assignment_create' course.id %}">
+                    + New Assignment
+                  </a>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
+    
+          {# show tools dropdown for teacher or enrolled students #}
+          {% if user == course.teacher or is_enrolled %}
+            {# tools dropdown wrapper #}
+            <div class="dropdown">
+              {# dropdown button #}
+              <button class="btn btn-sm btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Tools
+              </button>
+              {# dropdown menu list #}
+              <ul class="dropdown-menu dropdown-menu-end">
+                {# submissions link #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:submissions_page' course.id %}">
+                    Submissions
+                  </a>
+                </li>
+                {# chat link #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'chat:room' course.id %}">
+                    Chat
+                  </a>
+                </li>
+                {# whiteboard link #}
+                <li>
+                  <a class="dropdown-item" href="{% url 'courses:whiteboard' course.id %}">
+                    Whiteboard
+                  </a>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    {# materials section #}
+
+    {# course content card container #}
+    <div class="card mt-4">
+      {# card header title #}
+      <div class="card-header">
+        Course Content
+      </div>
+    
+      {# card body content #}
+      <div class="card-body">
+    
+        {# accordion wrapper for folders #}
+        <div class="accordion" id="foldersAccordion">
+    
+          {# loop through each folder #}
+          {% for folder in folders %}
+    
+            {# one accordion item per folder #}
+            <div class="accordion-item">
+    
+              {# header row with folder button and optional delete #}
+              <div class="d-flex justify-content-between align-items-center w-100">
+                {# accordion toggle button for the folder #}
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse{{ folder.id }}">
+                  📁 {{ folder.name }}
+                </button>
+              
+                {# only show folder delete to the teacher #}
+                {% if user == course.teacher %}
+                  {# delete folder form #}
+                  <form method="post"
+                        action="{% url 'courses:folder_delete' course.id folder.id %}"
+                        class="ms-2 me-2">
+                    {# csrf token for delete action #}
+                    {% csrf_token %}
+                    {# delete folder button with confirm popup #}
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Delete this folder and all its materials?');">
+                      Delete
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+    
+              {# collapsible area for folder contents #}
+              <div id="collapse{{ folder.id }}"
+                   class="accordion-collapse collapse">
+    
+                {# accordion body for materials list #}
+                <div class="accordion-body">
+    
+                  {# loop through materials inside this folder #}
+                  {% for material in folder.materials.all %}
+    
+                    {# one material row with open/delete actions #}
+                    <div class="d-flex justify-content-between border-bottom py-2">
+    
+                      {# left side material title #}
+                      <span>
+                        {{ material.title }}
+                      </span>
+    
+                      {# right side actions #}
+                      <div>
+    
+                        {# open file link #}
+                        <a href="{{ material.file.url }}"
+                           target="_blank"
+                           class="btn btn-sm btn-outline-primary">
+                           Open
+                        </a>
+    
+                        {# only show delete to the teacher #}
+                        {% if user == course.teacher %}
+    
+                          {# delete material link #}
+                          <a href="{% url 'courses:material_delete' course.id material.id %}"
+                             class="btn btn-sm btn-danger">
+                             Delete
+                          </a>
+    
+                        {% endif %}
+    
+                      </div>
+    
+                    </div>
+    
+                  {# empty state if no materials exist #}
+                  {% empty %}
+                    <p class="text-muted">No files</p>
+                  {% endfor %}
+    
+                </div>
+              </div>
+            </div>
+    
+          {# empty state if no folders exist #}
+          {% empty %}
+            <p>No folders yet</p>
+          {% endfor %}
+    
+        </div>
+    
+      </div>
+    </div>
+    
+  </div>
+
+  {# feedback ajax script block #}
+  <script>
+    const form = document.getElementById("feedbackForm");
+
+    if (form) {
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+    
+        // collect the form data
+        const formData = new FormData(form);
+    
+        // send the form using fetch
+        fetch(form.action, {
+            // use post method
+            method: "POST",
+            // set headers (csrf)
+            headers: {
+                "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+            },
+            // send the form data body
+            body: formData
+        })
+    
+        // turn the response into json
+        .then(response => response.json())
+    
+        // handle the json data
+        .then(data => {
+    
+            // if avg rating comes back, update the header text
+            if(data.avg_rating){
+    
+                // find the rating text element in the header
+                document.querySelector(".card-header .text-muted")
+                // update it with the new rating
+                .innerText = "⭐ " + data.avg_rating + "/5";
+    
+            }
+    
+            // show a simple confirmation alert
+            alert("Feedback submitted!");
+    
+        });
+    
+    });
+    }
+  </script>
+
+  {# remove/block ajax script block #}
+  <script>
+    // helper to attach ajax actions to a button class
+    function ajaxAction(btnClass){
+
+    document.querySelectorAll(btnClass).forEach(btn => {
+
+    btn.addEventListener("click", function(){
+
+    fetch(this.dataset.url, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}"
+        }
+    })
+
+    .then(res => res.json())
+
+    .then(data => {
+ 
+    if(data.success){
+ 
+      const studentRow = document.getElementById("student" + data.student_id);
+      const blockedRow = document.getElementById("blocked" + data.student_id);
+
+      if (studentRow) {
+        studentRow.remove();
+      }
+
+      if (blockedRow) {
+        blockedRow.remove();
+      }
+ 
+    document.querySelector("strong")
+    .innerText = data.count;
+    
+    }
+    
+    });
+    
+    });
+    
+    });
+    }
+    
+    // enable remove buttons
+    ajaxAction(".removeBtn");
+    // enable block buttons
+    ajaxAction(".blockBtn");
+    ajaxAction(".unblockBtn");
+    
+  </script>
+
+
+  {# enroll ajax script block #}
+  <script>
+    // wrap in an iife so variables stay local
+    (function () {
+      // get the enroll form element
+      const enrollForm = document.getElementById("enrollForm");
+      // stop if it does not exist (only shows for some students)
+      if (!enrollForm) return; // only exists for student who isn't enrolled yet
+    
+    
+      // get the enroll button element
+      const enrollBtn = document.getElementById("enrollBtn");
+      // get the message area for enroll feedback
+      const enrollMsg = document.getElementById("enrollMsg");
+      // get the student count element
+      const countEl = document.getElementById("enrollmentCount");
+    
+      // listen for enroll form submit
+      enrollForm.addEventListener("submit", function (e) {
+        // stop the normal form submit
+        e.preventDefault();
+    
+        // collect the form data
+        const formData = new FormData(enrollForm);
+    
+        // disable the button while working
+        enrollBtn.disabled = true;
+        // show a loading label
+        enrollBtn.textContent = "Enrolling...";
+    
+        // send the enroll request
+        fetch(enrollForm.action, {
+          // use post method
+          method: "POST",
+          // send headers for csrf and ajax hint
+          headers: {
+            "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          // send the form data body
+          body: formData
+        })
+        .then(async (res) => {
+          const data = await res.json();
+
+          if (!res.ok) throw data;
+          return data;
+        })
+    
+        .then((data) => {
+          // update student count
+      
+          if (countEl && typeof data.count !== "undefined") {
+            // set new count text
+            countEl.textContent = data.count;
+          }
+    
+          // replace form with a success button
+          enrollForm.innerHTML = `<button class="btn btn-success w-100" disabled>Enrolled ✓</button>`;
+          // try to find course actions area
+          const actions = document.getElementById("courseActions");
+          // add submissions button if missing
+          if (actions && !document.getElementById("submissionsBtn")) {
+            // insert a new link button
+            actions.insertAdjacentHTML(
+              "beforeend",
+              `<a id="submissionsBtn"
+                  href="/courses/course/${courseId}/submissions/"
+                  class="btn btn-sm btn-outline-dark">
+                  Submissions
+              </a>`
+            );
+          }
+    
+          // show a success message under the button
+          if (enrollMsg) {
+            // set green styling
+            enrollMsg.className = "small mt-2 text-success";
+            // set message text
+            enrollMsg.textContent = "You are now enrolled in this course.";
+          }
+        })
+        // handle errors
+        .catch((err) => {
+          enrollBtn.disabled = false;
+          // reset button text
+          enrollBtn.textContent = "Enroll in this course";
+
+          if (enrollMsg) {
+            enrollMsg.className = "small mt-2 text-danger";
+            enrollMsg.textContent = err.error || "Could not enroll. Please try again.";
+          }
+        });
+      });
+      
+
+    })();
+  </script>
+
+{% endblock %}

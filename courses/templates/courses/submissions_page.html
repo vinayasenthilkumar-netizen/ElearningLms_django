@@ -1,0 +1,436 @@
+
+{% extends "base.html" %}
+
+{% block title %}Submissions - {{ course.title }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 d-flex justify-content-between align-items-center">
+
+
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:detail' course.id %}">
+    ← Back to course
+  </a>
+
+  {% if is_teacher %}
+
+    <a class="btn btn-sm btn-primary" href="{% url 'courses:assignment_create' course.id %}">
+      + New Assignment
+    </a>
+  {% endif %}
+</div>
+
+<div class="card mb-4">
+
+  {# card body for padding #}
+  <div class="card-body">
+
+    {# main heading #}
+    <h1 class="h4 mb-1">Submission Area</h1>
+
+    {# show the course title under the heading #}
+    <div class="text-muted">{{ course.title }}</div>
+  </div>
+</div>
+
+{# only show the assignments list if there are assignments #}
+{% if assignments %}
+
+  <div class="row g-4">
+
+    {% for assignment in assignments %}
+
+      <div class="col-12">
+
+        <div class="card shadow-sm">
+
+          <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+
+              <div>
+
+                {# assignment title #}
+                <h5 class="mb-1">{{ assignment.title }}</h5>
+
+                {# show instructions if they exist #}
+                {% if assignment.instructions %}
+
+                  {# assignment instructions text #}
+                  <p class="text-muted mb-2">{{ assignment.instructions }}</p>
+                {% endif %}
+
+                {# show due date if it exists #}
+                {% if assignment.due_date %}
+
+                  {# due date text #}
+                  <small class="text-muted">
+                    Due: {{ assignment.due_date|date:"M d, Y H:i" }}
+                  </small>
+                {% endif %}
+              </div>
+
+              {# right side action buttons #}
+              <div class="d-flex gap-2 flex-wrap">
+
+                {# teacher only edit/delete actions #}
+                {% if is_teacher %}
+
+                  {# link to edit assignment #}
+                  <a href="{% url 'courses:assignment_edit' course.id assignment.id %}"
+                     class="btn btn-sm btn-outline-secondary">
+                    Edit
+                  </a>
+
+                  {# link to delete assignment #}
+                  <a href="{% url 'courses:assignment_delete' course.id assignment.id %}"
+                     class="btn btn-sm btn-outline-danger">
+                    Delete
+                  </a>
+                {% endif %}
+
+                {% if is_student and is_enrolled %}
+
+                  {# if due date exists and is past, block submissions #}
+                  {% if assignment.due_date and assignment.due_date < now %}
+
+                    {# disabled button when deadline passed #}
+                    <button class="btn btn-sm btn-secondary" disabled>
+                      🔒 Deadline Passed
+                    </button>
+
+                  {# otherwise allow submit or update #}
+                  {% else %}
+
+                    {# link to upload submission page #}
+                    <a href="{% url 'courses:submission_upload' course.id assignment.id %}"
+                       class="btn btn-sm btn-outline-primary">
+
+                      {# if student already submitted, show update text #}
+                      {% if assignment.my_submission %}
+                        Update Submission
+                      {# otherwise show submit text #}
+                      {% else %}
+                        Submit Work
+
+                      {% endif %}
+
+                    </a>
+
+                  {% endif %}
+
+                {% endif %}
+              </div>
+            </div>
+
+            {# student view section label #}
+
+            {# show student section only for enrolled students #}
+            {% if is_student and is_enrolled %}
+
+              {# divider line #}
+              <hr>
+
+              {# if the student has a submission, show details #}
+              {% if assignment.my_submission %}
+
+                {# wrapper for student submission info #}
+                <div class="small">
+
+                  {# row showing the submission file #}
+                  <div>
+                    <strong>Your submission:</strong>
+                    <a href="{{ assignment.my_submission.file.url }}" target="_blank">Open file</a>
+                  </div>
+
+                  {# show last updated date/time #}
+                  <div class="text-muted">
+                    Last updated: {{ assignment.my_submission.updated_at|date:"M d, Y H:i" }}
+                  </div>
+
+                  {# show note if it exists #}
+                  {% if assignment.my_submission.note %}
+
+                    {# note text #}
+                    <div class="text-muted">
+                      Note: {{ assignment.my_submission.note }}
+                    </div>
+
+                  {% endif %}
+
+                  {# show grade if it exists #}
+                  {% if assignment.my_submission.grade %}
+
+                    {# grade badge wrapper #}
+                    <div class="mt-2">
+                      <span class="badge bg-success">
+                        Grade: {{ assignment.my_submission.grade }}
+                      </span>
+                    </div>
+                  {% endif %}
+
+                  {# show teacher comment if it exists #}
+                  {% if assignment.my_submission.teacher_comment %}
+
+                    {# teacher comment text #}
+                    <div class="text-muted mt-1">
+                      <strong>Teacher:</strong> {{ assignment.my_submission.teacher_comment }}
+                    </div>
+                  {% endif %}
+                </div>
+
+              {# if no submission exists, show message #}
+              {% else %}
+
+                {# message shown when student has not submitted #}
+                <div class="small text-muted">
+                  You have not submitted yet.
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {# teacher view section label #}
+
+            {# show teacher section only for teachers #}
+            {% if is_teacher %}
+
+              {# divider line #}
+              <hr>
+
+              {# collapsible area to view submissions #}
+              <details>
+
+                {# clickable summary line with submission count #}
+                <summary style="cursor:pointer;">
+                  View submissions ({{ assignment.submissions.count }})
+                </summary>
+
+                {# wrapper for the submissions list #}
+                <div class="mt-3">
+
+                  {# list group for submissions #}
+                  <ul class="list-group">
+
+                    {# loop through each submission #}
+                    {% for sub in assignment.submissions.all %}
+
+                      {# one submission list item #}
+                      <li class="list-group-item">
+
+                        {# top row: student info + grade badge #}
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+
+                          {# left side: student and submission info #}
+                          <div>
+                            <strong>{{ sub.student.username }}</strong><br>
+                            <a href="{{ sub.file.url }}" target="_blank">Open submission</a>
+
+                            {# show updated time #}
+                            <div class="small text-muted">
+                              Updated: {{ sub.updated_at|date:"M d, Y H:i" }}
+                            </div>
+
+                            {# show note if it exists #}
+                            {% if sub.note %}
+
+                              {# note text #}
+                              <div class="small text-muted">
+                                Note: {{ sub.note }}
+                              </div>
+
+                            {% endif %}
+                          </div>
+
+                          {# grade badge (hidden if no grade) #}
+                          <span id="gradeBadge{{ sub.id }}"
+                                class="badge bg-success"
+                                style="{% if not sub.grade %}display:none;{% endif %}">
+                            Grade: {{ sub.grade }}
+                          </span>
+                        </div>
+
+                        {# grading form (ajax) #}
+                        <form class="gradeForm mt-3"
+                              data-submission="{{ sub.id }}"
+                              method="post"
+                              action="{% url 'courses:submission_grade' course.id sub.id %}">
+
+                          {# csrf token to protect the form submission #}
+                          {% csrf_token %}
+
+                          {# row layout for grade inputs and save button #}
+                          <div class="row g-2 align-items-start">
+
+                            {# grade input column #}
+                            <div class="col-md-3">
+                              <input type="text"
+                                     name="grade"
+                                     value="{{ sub.grade }}"
+                                     class="form-control form-control-sm"
+                                     placeholder="Grade (e.g. 85 / A)">
+                            </div>
+
+                            {# teacher comment input column #}
+                            <div class="col-md-7">
+                              <input type="text"
+                                     name="teacher_comment"
+                                     value="{{ sub.teacher_comment }}"
+                                     class="form-control form-control-sm"
+                                     placeholder="Teacher comment">
+                            </div>
+
+                            {# save button column #}
+                            <div class="col-md-2">
+                              <button class="btn btn-sm btn-primary w-100">
+                                Save
+                              </button>
+                            </div>
+                          </div>
+
+                          {# status message row for saved/error feedback #}
+                          <div class="small mt-1">
+
+                            {# saved message (hidden by default) #}
+                            <span id="gradeSaved{{ sub.id }}"
+                                  class="text-success"
+                                  style="display:none;">
+                              Saved 
+                            </span>
+
+                            {# error message (hidden by default) #}
+                            <span id="gradeErr{{ sub.id }}"
+                                  class="text-danger"
+                                  style="display:none;">
+                            </span>
+                          </div>
+                        </form>
+
+                      </li>
+
+                    {# empty state if no submissions exist #}
+                    {% empty %}
+                      <li class="list-group-item text-muted">
+                        No submissions yet.
+                      </li>
+
+                    {# end submissions loop #}
+                    {% endfor %}
+                  </ul>
+                </div>
+              </details>
+
+            {# end teacher section check #}
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+    {# end assignments loop #}
+    {% endfor %}
+  </div>
+
+{# empty state if there are no assignments #}
+{% else %}
+
+  {# info alert shown when no assignments exist #}
+  <div class="alert alert-info">
+    No assignments yet.
+
+    {# if teacher, show quick link to create assignment #}
+    {% if is_teacher %}
+      <a href="{% url 'courses:assignment_create' course.id %}">Create one now</a>.
+    {% endif %}
+  </div>
+
+{# end assignments check #}
+{% endif %}
+
+{# ajax grading script (js comments used inside) #}
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+  
+    return cookieValue;
+  }
+
+
+  document.querySelectorAll(".gradeForm").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const submissionId = form.dataset.submission;
+      const saved = document.getElementById("gradeSaved" + submissionId);
+      const err = document.getElementById("gradeErr" + submissionId);
+      const badge = document.getElementById("gradeBadge" + submissionId);
+
+      // hide the saved message at the start
+      if (saved) saved.style.display = "none";
+      // reset the error message at the start
+      if (err) {
+        err.style.display = "none";
+        err.textContent = "";
+      }
+
+      // collect the form data
+      const formData = new FormData(form);
+
+      // send the grade update using fetch
+      fetch(form.action, {
+        // use post method
+        method: "POST",
+        // send csrf and ajax headers
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        // send the form data body
+        body: formData
+      })
+      // parse json and handle non-ok responses
+      .then(async (res) => {
+
+        const data = await res.json();
+  
+        if (!res.ok) throw data;
+
+        return data;
+      })
+      // handle success response
+      .then((data) => {
+        // show the saved message briefly
+        if (saved) {
+          saved.style.display = "inline";
+          setTimeout(() => { saved.style.display = "none"; }, 1200);
+        }
+
+        // update the grade badge based on returned grade
+        if (badge) {
+          if (data.grade && data.grade.trim() !== "") {
+            badge.textContent = "Grade: " + data.grade;
+            badge.style.display = "inline-block";
+          } else {
+            badge.style.display = "none";
+          }
+        }
+      })
+      // handle errors
+      .catch((data) => {
+        if (err) {
+          err.textContent = data.error || "Could not save grade.";
+          err.style.display = "inline";
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+
+{% extends "base.html" %}
+{% block title %}Submit Work{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:submissions_page' course.id %}">
+    ← Back to submissions
+  </a>
+</div>
+
+<div class="card shadow-sm">
+
+  {# card body for padding and layout #}
+  <div class="card-body">
+
+    <h2 class="h4 mb-2">
+      {% if submission %}Update Submission{% else %}Submit Work{% endif %}
+    </h2>
+
+    <p class="text-muted mb-1">Course: {{ course.title }}</p>
+
+    <p class="text-muted mb-3">Assignment: {{ assignment.title }}</p>
+
+    {% if error %}
+
+      {# alert box for errors #}
+      <div class="alert alert-danger">{{ error }}</div>
+
+    {% endif %}
+
+    {% if submission %}
+
+      {# info alert showing the currently uploaded file #}
+      <div class="alert alert-info small">
+        Current file:
+        <a href="{{ submission.file.url }}" target="_blank">{{ submission.file.name }}</a>
+
+    {% endif %}
+
+
+    <form method="post" enctype="multipart/form-data">
+
+      {# csrf token to protect the form submission #}
+      {% csrf_token %}
+
+      {# file upload section #}
+      <div class="mb-3">
+
+        {# label for the file input#}
+        <label class="form-label">Upload file {% if submission %}(optional to replace){% endif %}</label>
+
+        {# file input #}
+        <input type="file" name="file" class="form-control" {% if not submission %}required{% endif %}>
+      </div>
+      <div class="mb-3">
+
+        {# label for the note textarea #}
+        <label class="form-label">Note (optional)</label>
+
+        {# textarea for extra notes #}
+        <textarea name="note" class="form-control" rows="3">{% if submission %}{{ submission.note }}{% endif %}</textarea>
+      </div>
+
+      {# submit button text changes depending on whether this is an update #}
+      <button class="btn btn-primary">
+        {% if submission %}Update submission{% else %}Submit work{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+
+{% extends "base.html" %}
+{% block title %}Add material{% endblock %}
+{% block content %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h2 class="mb-0">Add material</h2>
+
+    {# link back to the course detail page #}
+    <a href="{% url 'courses:detail' course.id %}" class="btn btn-outline-secondary btn-sm">
+      ← Back to course
+    </a>
+  </div>
+  <div class="card shadow-sm">
+
+    <div class="card-body p-4">
+
+      <h5 class="mb-3">Course: {{ course.title }}</h5>
+
+      {% if error %}
+
+        {# alert box for errors #}
+        <div class="alert alert-danger">{{ error }}</div>
+
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+        <div class="mb-3">
+
+          <label class="form-label">Title</label>
+
+          <input type="text" name="title" class="form-control" required>
+        </div>
+
+        {# folder select section #}
+        <div class="mb-3">
+
+          {# label for folder dropdown #}
+          <label class="form-label">Folder</label>
+
+          {# dropdown to pick which folder to put the file in #}
+          <select name="folder_id" class="form-select" required>
+
+            {# placeholder option #}
+            <option value="" selected disabled>Choose a folder</option>
+
+            {# go through folders and show each one as an option #}
+            {% for f in folders %}
+
+              {# option for one folder #}
+              <option value="{{ f.id }}">{{ f.name }}</option>
+
+            {# end folders loop #}
+            {% endfor %}
+          </select>
+
+          {# small helper text below the dropdown #}
+          <div class="form-text">Files are grouped by folder for students.</div>
+        </div>
+
+  
+        {# file upload section #}
+        <div class="mb-3">
+
+          {# label for file input #}
+          <label class="form-label">File</label>
+
+          {# file input for uploading the material #}
+          <input type="file" name="file" class="form-control" required>
+
+          {# helper text about supported file types #}
+          <div class="form-text">
+            Supported: PDF, images, videos, Word, Excel (depends on browser/server).
+          </div>
+        </div>
+
+        {# submit button to upload the file #}
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

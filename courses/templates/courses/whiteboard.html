@@ -1,0 +1,215 @@
+
+{% extends "base.html" %}
+
+{% block title %}Whiteboard - {{ course.title }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-3 d-flex justify-content-between align-items-center">
+
+
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:detail' course.id %}">
+    ← Back to course
+  </a>
+
+  {# show the course title on the right #}
+  <span class="text-muted small">{{ course.title }}</span>
+</div>
+
+{# main whiteboard card container #}
+<div class="card shadow-sm">
+
+  {# card header with drawing controls #}
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+
+    {# header title text #}
+    <strong>Live Whiteboard</strong>
+
+    {# color picker for pen color #}
+    <input type="color" id="colorPicker" value="#000000" class="form-control form-control-color ms-3">
+
+    {# brush size dropdown #}
+    <select id="brushSize" class="form-select form-select-sm" style="width:110px;">
+      {# small brush option #}
+      <option value="2">Small</option>
+      {# medium brush option (default) #}
+      <option value="4" selected>Medium</option>
+      {# large brush option #}
+      <option value="8">Large</option>
+    </select>
+
+    {# button to switch to pen mode #}
+    <button id="penBtn" class="btn btn-sm btn-outline-primary">Pen</button>
+
+    {# button to switch to eraser mode #}
+    <button id="eraserBtn" class="btn btn-sm btn-outline-secondary">Eraser</button>
+
+    {# only teachers can clear the whole board #}
+    {% if is_teacher %}
+
+      {# button to clear the board for everyone #}
+      <button id="clearBtn" class="btn btn-sm btn-outline-danger">Clear Board</button>
+
+    {% endif %}
+  </div>
+
+  {# card body holding the canvas #}
+  <div class="card-body">
+
+    {# drawing canvas for the whiteboard #}
+    <canvas id="board" width="1000" height="600"
+            style="width:100%; border:1px solid #ddd; border-radius:8px; background:#fff;"></canvas>
+  </div>
+</div>
+
+{# whiteboard javascript (js comments used inside) #}
+<script>
+(function () {
+  // get the canvas element
+  const canvas = document.getElementById("board");
+  // get the drawing context
+  const ctx = canvas.getContext("2d");
+
+  // get the color picker element
+  const colorPicker = document.getElementById("colorPicker");
+  // get the brush size dropdown
+  const brushSize = document.getElementById("brushSize");
+  // get the pen button
+  const penBtn = document.getElementById("penBtn");
+  // get the eraser button
+  const eraserBtn = document.getElementById("eraserBtn");
+  // get the clear button (may not exist for students)
+  const clearBtn = document.getElementById("clearBtn");
+
+  // choose ws or wss based on whether the site is https
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  // open the websocket connection for this course whiteboard
+  const socket = new WebSocket(`${protocol}://${window.location.host}/ws/whiteboard/{{ course.id }}/`);
+
+  // track if the user is currently drawing
+  let drawing = false;
+  // store the last x position
+  let lastX = 0;
+  // store the last y position
+  let lastY = 0;
+  // track the current tool (pen or eraser)
+  let currentTool = "pen";
+
+  // convert mouse position into canvas coordinates
+  function getPos(e) {
+    // get the canvas size on the screen
+    const rect = canvas.getBoundingClientRect();
+    // scale x based on real canvas width
+    const scaleX = canvas.width / rect.width;
+    // scale y based on real canvas height
+    const scaleY = canvas.height / rect.height;
+    // return the corrected x and y positions
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }
+
+  // draw a line segment on the canvas
+  function drawLine(x0, y0, x1, y1, color, size) {
+    // start a new drawing path
+    ctx.beginPath();
+    // move to the start point
+    ctx.moveTo(x0, y0);
+    // draw a line to the end point
+    ctx.lineTo(x1, y1);
+    // set the stroke color
+    ctx.strokeStyle = color;
+    // set the stroke width
+    ctx.lineWidth = size;
+    // smooth line ends
+    ctx.lineCap = "round";
+    // smooth line corners
+    ctx.lineJoin = "round";
+    // actually draw the line
+    ctx.stroke();
+  }
+
+  // send a draw event over the websocket
+  function sendDraw(x0, y0, x1, y1) {
+    // use white color when erasing
+    const color = currentTool === "eraser" ? "#ffffff" : colorPicker.value;
+    // convert brush size to a number
+    const size = parseInt(brushSize.value, 10);
+
+    // send the drawing data to the server
+    socket.send(JSON.stringify({
+      event: "draw",
+      x0, y0, x1, y1,
+      color,
+      size
+    }));
+  }
+
+  // handle incoming websocket messages
+  socket.onmessage = function (e) {
+    // parse the incoming json data
+    const data = JSON.parse(e.data);
+
+    // handle drawing events
+    if (data.event === "draw") {
+      drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+    }
+
+    // handle clear events
+    if (data.event === "clear") {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  // start drawing when the mouse is pressed down
+  canvas.addEventListener("mousedown", function (e) {
+    // turn drawing on
+    drawing = true;
+    // get the starting position
+    const pos = getPos(e);
+    // save the starting x
+    lastX = pos.x;
+    // save the starting y
+    lastY = pos.y;
+  });
+
+  // draw while the mouse moves (only if drawing is true)
+  canvas.addEventListener("mousemove", function (e) {
+    // stop if the mouse is not held down
+    if (!drawing) return;
+
+    // get the new position
+    const pos = getPos(e);
+    sendDraw(lastX, lastY, pos.x, pos.y);
+    // update last x for the next segment
+    lastX = pos.x;
+    // update last y for the next segment
+    lastY = pos.y;
+  });
+
+  // stop drawing when the mouse is released anywhere
+  window.addEventListener("mouseup", function () {
+    drawing = false;
+  });
+
+  // switch to pen tool on click
+  penBtn.addEventListener("click", function () {
+    currentTool = "pen";
+  });
+
+  eraserBtn.addEventListener("click", function () {
+    currentTool = "eraser";
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      socket.send(JSON.stringify({
+        event: "clear"
+      }));
+    });
+  }
+})();
+</script>
+
+{% endblock %}

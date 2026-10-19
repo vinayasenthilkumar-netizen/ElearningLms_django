@@ -1,0 +1,71 @@
+
+{% extends "base.html" %}
+{% block title %}Create Assignment{% endblock %}
+{% block content %}
+
+<div class="mb-3">
+
+  {# link back to the submissions page for this course #}
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:submissions_page' course.id %}">
+    ← Back to submissions
+  </a>
+</div>
+
+<div class="card shadow-sm">
+
+  <div class="card-body">
+
+    <h2 class="h4 mb-3">Create Assignment</h2>
+
+    {# show which course this assignment is for #}
+    <p class="text-muted mb-3">Course: {{ course.title }}</p>
+
+    {# show an error message if one exists #}
+    {% if error %}
+
+      {# alert box for errors #}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {# start the form and send data using post #}
+    <form method="post">
+
+      {# csrf token to protect the form submission #}
+      {% csrf_token %}
+
+      {# title input section #}
+      <div class="mb-3">
+
+        {# label for the title field #}
+        <label class="form-label">Title</label>
+
+        {# text input for assignment title #}
+        <input type="text" name="title" class="form-control" required>
+      </div>
+
+      {# instructions textarea section #}
+      <div class="mb-3">
+
+        {# label for the instructions field #}
+        <label class="form-label">Instructions</label>
+
+        {# textarea for assignment instructions #}
+        <textarea name="instructions" class="form-control" rows="4"></textarea>
+      </div>
+
+      {# due date input section #}
+      <div class="mb-3">
+
+        {# label for the due date field #}
+        <label class="form-label">Due date (optional)</label>
+
+        {# datetime input for optional due date #}
+        <input type="datetime-local" name="due_date" class="form-control">
+      </div>
+
+      {# submit button to create the assignment #}
+      <button class="btn btn-primary">Create assignment</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

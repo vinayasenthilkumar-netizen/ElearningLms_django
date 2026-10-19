@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# main page container with some spacing at the top #}
+<div class="container mt-4">
+
+    {# page heading to show this is the course edit page #}
+    <h2>edit course</h2>
+
+    {# show an error message if the form validation fails #}
+    {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {# form that sends the updated course data back to the server #}
+    <form method="post">
+        {# csrf token protects the form submission #}
+        {% csrf_token %}
+
+        {# input field for editing the course title #}
+        <div class="mb-3">
+            <label for="title" class="form-label">course title</label>
+            <input type="text" name="title" id="title" class="form-control" value="{{ course.title }}" required>
+        </div>
+
+        {# textarea field for editing the course description #}
+        <div class="mb-3">
+            <label for="description" class="form-label">description</label>
+            <textarea name="description" id="description" class="form-control" rows="5">{{ course.description }}</textarea>
+        </div>
+
+        {# submit button saves the changes #}
+        <button type="submit" class="btn btn-primary">save changes</button>
+
+        {# cancel link returns the user to the course detail page #}
+        <a href="{% url 'courses:detail' course.id %}" class="btn btn-secondary">cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+
+{% extends "base.html" %}
+
+{% block title %}Create Course{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'courses:list' %}">
+    ← Back to courses
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4 p-md-5">
+        <div class="mb-4">
+
+          {# main title text #}
+          <h1 class="h3 mb-1">Create a New Course</h1>
+
+          <p class="text-muted mb-0">
+            Add a course title and description. You can add folders, materials, and assignments after creating it.
+          </p>
+        </div>
+
+        {# show an error message if one exists #}
+        {% if error %}
+
+          {# alert box for errors #}
+          <div class="alert alert-danger">
+            {{ error }}
+          </div>
+
+        {# end error check #}
+        {% endif %}
+
+        {# start the form and send data using post #}
+        <form method="post">
+
+          {# csrf token to protect the form submission #}
+          {% csrf_token %}
+
+          {# course title input section #}
+          <div class="mb-3">
+
+            {# label for the course title input #}
+            <label for="id_title" class="form-label">Course Title</label>
+
+            {# text input for the course title #}
+            <input
+              type="text"
+              id="id_title"
+              name="title"
+              class="form-control"
+              placeholder="e.g. Advanced Web Development"
+              required
+            >
+          </div>
+
+          {# course description textarea section #}
+          <div class="mb-4">
+
+            {# label for the course description textarea #}
+            <label for="id_description" class="form-label">Course Description</label>
+
+            {# textarea for the course description #}
+            <textarea
+              id="id_description"
+              name="description"
+              rows="5"
+              class="form-control"
+              placeholder="Write a short description of the course, module topics, and what students will learn."
+            ></textarea>
+          </div>
+
+          {# action buttons row #}
+          <div class="d-flex gap-2">
+
+            {# submit button to create the course #}
+            <button type="submit" class="btn btn-primary">
+              Create Course
+            </button>
+
+            {# cancel link that goes back to the courses list #}
+            <a href="{% url 'courses:list' %}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

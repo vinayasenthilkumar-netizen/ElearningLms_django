@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Delete material{% endblock %}
+
+{% block content %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+
+
+    <h2 class="mb-0">Delete material</h2>
+
+    <a href="{% url 'courses:detail' course.id %}" class="btn btn-outline-secondary btn-sm">
+      ← Back to course
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-danger">
+
+    <div class="card-body p-4">
+
+      <h5 class="text-danger mb-2">Are you sure?</h5>
+
+      <p class="mb-3">
+        You are about to delete: <strong>{{ material.title }}</strong>
+      </p>
+
+      <div class="alert alert-warning small">
+        This will remove the file from the course. Students will no longer be able to access it.
+      </div>
+
+      {# form that submits the delete action #}
+      <form method="post" class="d-flex gap-2">
+
+        {# csrf token to protect the form submission #}
+        {% csrf_token %}
+
+        {# submit button to confirm deletion #}
+        <button class="btn btn-danger">Yes, delete</button>
+
+        {# cancel link that goes back to the course detail page #}
+        <a href="{% url 'courses:detail' course.id %}" class="btn btn-outline-secondary">
+          Cancel
+        </a>
+      </form>
+    </div>
+  </div>
+{% endblock %}
