@@ -1,0 +1,97 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {# page title block that other pages can override #}
+  <title>{% block title %}LMS{% endblock %}</title>
+
+  {# load bootstrap 5 from a cdn #}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  {# extra head block for page-specific css or meta tags #}
+  {% block extra_head %}{% endblock %}
+</head>
+
+{# start the body and give it a light background #}
+<body class="bg-light">
+
+{# top navigation bar #}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+
+  <div class="container">
+
+    <a class="navbar-brand" href="{% url 'courses:list' %}">My LMS</a>
+
+    <div class="d-flex align-items-center gap-2">
+
+      {# show different items depending on login status #}
+      {% if user.is_authenticated %}
+
+        {# show a small greeting with username #}
+        <span class="text-white small">Hi, {{ user.username }}</span>
+
+        {# dashboard link button #}
+        <a class="btn btn-sm btn-outline-light" href="{% url 'dashboard' %}">
+          Dashboard
+        </a>
+
+        {# logout form (post request) #}
+        <form method="post" action="{% url 'logout' %}" class="mb-0">
+
+          {# csrf token to protect the logout post request #}
+          {% csrf_token %}
+
+          {# logout button #}
+          <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+        </form>
+
+      {% else %}
+
+        {# login link button #}
+        <a class="btn btn-sm btn-outline-light" href="{% url 'login' %}">Login</a>
+
+        {# signup link button #}
+        <a class="btn btn-sm btn-warning" href="{% url 'signup' %}">Sign up</a>
+
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{# main content container with padding #}
+<main class="container py-4">
+
+  {# show django messages if there are any #}
+  {% if messages %}
+
+    {# loop through each message #}
+    {% for message in messages %}
+
+      {# bootstrap alert using message tag type #}
+      <div class="alert alert-{{ message.tags }} mb-3" role="alert">
+        {{ message }}
+      </div>
+
+    {% endfor %}
+
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+{# load bootstrap javascript bundle from a cdn #}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{# extra javascript block for page-specific scripts #}
+{% block extra_js %}{% endblock %}
+
+{# end body #}
+</body>
+
+</html>
